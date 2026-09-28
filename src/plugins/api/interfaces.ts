@@ -2028,13 +2028,31 @@ export interface AIRadioHost {
   effects?: AIRadioHostEffects;
 }
 
-/** Sounds a host dresses its breaks with: "" = off, "builtin" = the shipped gong, else a path or URL. */
+/** Sounds a host dresses its breaks with: a jingle library and a music bed ("" = none). */
 export interface AIRadioHostEffects {
-  news_jingle: string;
-  show_jingle: string;
+  jingles: AIRadioJingle[];
+  // percent of plain transitions that open with a general jingle
+  jingle_chance: number;
+  jingle_selection: "ai" | "random";
   music_bed: string;
   // dB the bed sits below the voice
   music_bed_level: number;
+}
+
+/** One jingle of a host's library: "builtin" = the shipped gong, else a path or URL. */
+export interface AIRadioJingle {
+  source: string;
+  // occasion (general, news, weather, intro, outro), time of day or free tags like a genre
+  tags: string[];
+  // the words the jingle says, so the AI can pick a fitting one
+  text: string;
+}
+
+/** What ai_radio/jingles/inspect reads from a jingle file. */
+export interface AIRadioJingleInfo {
+  duration: number | null;
+  title: string;
+  text: string;
 }
 
 export interface AIRadioStation {

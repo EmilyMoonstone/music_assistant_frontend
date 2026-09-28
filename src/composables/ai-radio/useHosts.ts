@@ -1,7 +1,11 @@
 import { useShows } from "@/composables/ai-radio/useShows";
 import { canUseQueueDj } from "@/helpers/ai_radio_access";
 import api from "@/plugins/api";
-import type { AIRadioHost, AIRadioSection } from "@/plugins/api/interfaces";
+import type {
+  AIRadioHost,
+  AIRadioJingleInfo,
+  AIRadioSection,
+} from "@/plugins/api/interfaces";
 import { authManager } from "@/plugins/auth";
 import { $t } from "@/plugins/i18n";
 import { store } from "@/plugins/store";
@@ -107,6 +111,13 @@ async function deleteHost(hostId: string): Promise<void> {
   }
 }
 
+/** Reads a jingle file's length, title and the words from its lyrics tag. */
+async function inspectJingle(source: string): Promise<AIRadioJingleInfo> {
+  return api.sendCommand<AIRadioJingleInfo>("ai_radio/jingles/inspect", {
+    source,
+  });
+}
+
 async function loadHostTemplate(): Promise<AIRadioHost> {
   return api.sendCommand<AIRadioHost>("ai_radio/hosts/template");
 }
@@ -199,5 +210,6 @@ export function useHosts() {
     loadPresets,
     setQueueDj,
     loadQueueDjStatus,
+    inspectJingle,
   };
 }
