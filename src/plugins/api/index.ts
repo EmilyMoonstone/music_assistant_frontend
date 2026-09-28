@@ -104,7 +104,8 @@ const ROLES_SCHEMA_VERSION = 74;
 const AI_RADIO_PLAYBACK_SCOPES_SCHEMA_VERSION = 75;
 
 // The per-segment allow_post option on AI Radio sections landed in API schema 81.
-const AI_RADIO_ALLOW_POST_SCHEMA_VERSION = 81;
+// test/mika-radio only: the test server carries the option on schema 80
+const AI_RADIO_ALLOW_POST_SCHEMA_VERSION = 80;
 
 export interface CommandOptions {
   /**
