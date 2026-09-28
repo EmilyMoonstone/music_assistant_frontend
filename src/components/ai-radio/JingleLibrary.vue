@@ -86,14 +86,22 @@
       />
     </div>
 
-    <Button variant="outline" size="sm" @click="addJingle">
-      <Plus class="h-4 w-4" />
-      {{ $t("providers.ai_radio.effects.add_jingle") }}
-    </Button>
+    <div class="flex flex-wrap gap-2">
+      <Button size="sm" @click="browserOpen = true">
+        <FolderOpen class="h-4 w-4" />
+        {{ $t("providers.ai_radio.effects.browse") }}
+      </Button>
+      <Button variant="outline" size="sm" @click="addJingle">
+        <Plus class="h-4 w-4" />
+        {{ $t("providers.ai_radio.effects.add_jingle") }}
+      </Button>
+    </div>
+    <JingleBrowserDialog v-model:open="browserOpen" @add="addPicked" />
   </div>
 </template>
 
 <script setup lang="ts">
+import JingleBrowserDialog from "@/components/ai-radio/JingleBrowserDialog.vue";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -108,7 +116,7 @@ import {
   type HostJingle,
 } from "@/helpers/ai_radio";
 import { $t } from "@/plugins/i18n";
-import { FileAudio, Plus, Trash2, X } from "@lucide/vue";
+import { FileAudio, FolderOpen, Plus, Trash2, X } from "@lucide/vue";
 import { ref } from "vue";
 import { toast } from "vue-sonner";
 
@@ -121,6 +129,7 @@ const jingles = defineModel<HostJingle[]>({ required: true });
 
 const { inspectJingle } = useHosts();
 const reading = ref<number | null>(null);
+const browserOpen = ref(false);
 
 function freeTags(jingle: HostJingle): string[] {
   return jingle.tags.filter((tag) => !PRESET_TAGS.includes(tag));
@@ -137,6 +146,12 @@ function addTag(jingle: HostJingle, event: Event) {
   const tag = normalizeJingleTag(input.value);
   if (tag && !jingle.tags.includes(tag)) jingle.tags.push(tag);
   input.value = "";
+}
+
+/** Appends the jingles picked from the media folder, skipping ones already in the library. */
+function addPicked(picked: HostJingle[]) {
+  const known = new Set(jingles.value.map((jingle) => jingle.source));
+  jingles.value.push(...picked.filter((jingle) => !known.has(jingle.source)));
 }
 
 function addJingle() {

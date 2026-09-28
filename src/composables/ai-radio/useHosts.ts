@@ -3,6 +3,7 @@ import { canUseQueueDj } from "@/helpers/ai_radio_access";
 import api from "@/plugins/api";
 import type {
   AIRadioHost,
+  AIRadioJingleFolder,
   AIRadioJingleInfo,
   AIRadioSection,
 } from "@/plugins/api/interfaces";
@@ -111,6 +112,14 @@ async function deleteHost(hostId: string): Promise<void> {
   }
 }
 
+/** Lists a folder of the media folder to pick jingles from; the media folder itself when omitted. */
+async function browseJingles(path?: string): Promise<AIRadioJingleFolder> {
+  return api.sendCommand<AIRadioJingleFolder>(
+    "ai_radio/jingles/browse",
+    path ? { path } : {},
+  );
+}
+
 /** Reads a jingle file's length, title and the words from its lyrics tag. */
 async function inspectJingle(source: string): Promise<AIRadioJingleInfo> {
   return api.sendCommand<AIRadioJingleInfo>("ai_radio/jingles/inspect", {
@@ -211,5 +220,6 @@ export function useHosts() {
     setQueueDj,
     loadQueueDjStatus,
     inspectJingle,
+    browseJingles,
   };
 }

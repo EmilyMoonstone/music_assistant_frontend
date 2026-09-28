@@ -2048,6 +2048,15 @@ export interface AIRadioJingle {
   text: string;
 }
 
+/** One folder of the media folder as ai_radio/jingles/browse lists it. */
+export interface AIRadioJingleFolder {
+  path: string;
+  // null at the media folder itself
+  parent: string | null;
+  folders: { name: string; path: string }[];
+  files: { name: string; path: string }[];
+}
+
 /** What ai_radio/jingles/inspect reads from a jingle file. */
 export interface AIRadioJingleInfo {
   duration: number | null;

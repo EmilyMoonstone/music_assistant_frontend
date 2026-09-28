@@ -1,3 +1,4 @@
+import JingleBrowserDialog from "@/components/ai-radio/JingleBrowserDialog.vue";
 import JingleLibrary from "@/components/ai-radio/JingleLibrary.vue";
 import type { HostJingle } from "@/helpers/ai_radio";
 import { flushPromises, mount } from "@vue/test-utils";
@@ -104,5 +105,32 @@ describe("JingleLibrary", () => {
 
     await wrapper.find('button[aria-label="Remove jingle"]').trigger("click");
     expect(jingles).toEqual([]);
+  });
+
+  it("adds jingles picked from the media folder, skipping ones it already has", async () => {
+    const jingles: HostJingle[] = [
+      { source: "/media/a.mp3", tags: ["news"], text: "Kept." },
+    ];
+    sendCommand.mockImplementation(async () => ({
+      path: "/media",
+      parent: null,
+      folders: [],
+      files: [],
+    }));
+    const wrapper = mountLibrary(jingles);
+
+    await button(wrapper, "Pick from media folder")?.trigger("click");
+    const dialog = wrapper.findComponent(JingleBrowserDialog);
+    expect(dialog.props("open")).toBe(true);
+    dialog.vm.$emit("add", [
+      { source: "/media/a.mp3", tags: [], text: "" },
+      { source: "/media/b.mp3", tags: [], text: "New." },
+    ]);
+    await flushPromises();
+
+    expect(jingles).toEqual([
+      { source: "/media/a.mp3", tags: ["news"], text: "Kept." },
+      { source: "/media/b.mp3", tags: [], text: "New." },
+    ]);
   });
 });
