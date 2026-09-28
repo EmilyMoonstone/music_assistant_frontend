@@ -1,0 +1,1 @@
+import{Ca as e,fi as t}from"./lucide-C6LUEm9g.js";function n(e,t){if(!t&&e?.active_source&&e.active_source!==e.player_id)return e.source_list?.find(t=>t.id===e.active_source)}function r(r,i){return{externalSource:t(()=>n(e(r),e(i)))}}export{r as n,n as t};
