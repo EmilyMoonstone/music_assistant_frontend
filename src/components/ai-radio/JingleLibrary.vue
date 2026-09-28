@@ -16,6 +16,16 @@
         <div class="flex shrink-0 gap-1">
           <Button
             variant="outline"
+            size="icon-sm"
+            :disabled="!jingle.source.trim()"
+            :aria-label="$t('providers.ai_radio.effects.preview')"
+            :title="$t('providers.ai_radio.effects.preview')"
+            @click="previewJingle(jingle.source.trim())"
+          >
+            <Play class="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
             size="sm"
             @click="jingle.source = BUILTIN_JINGLE"
           >
@@ -116,7 +126,7 @@ import {
   type HostJingle,
 } from "@/helpers/ai_radio";
 import { $t } from "@/plugins/i18n";
-import { FileAudio, FolderOpen, Plus, Trash2, X } from "@lucide/vue";
+import { FileAudio, FolderOpen, Play, Plus, Trash2, X } from "@lucide/vue";
 import { ref } from "vue";
 import { toast } from "vue-sonner";
 
@@ -127,7 +137,7 @@ const PRESET_TAGS: readonly string[] = [
 
 const jingles = defineModel<HostJingle[]>({ required: true });
 
-const { inspectJingle } = useHosts();
+const { inspectJingle, previewJingle } = useHosts();
 const reading = ref<number | null>(null);
 const browserOpen = ref(false);
 

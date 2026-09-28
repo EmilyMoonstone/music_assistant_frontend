@@ -1,6 +1,7 @@
 import JingleBrowserDialog from "@/components/ai-radio/JingleBrowserDialog.vue";
 import JingleLibrary from "@/components/ai-radio/JingleLibrary.vue";
 import type { HostJingle } from "@/helpers/ai_radio";
+import { store } from "@/plugins/store";
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -132,5 +133,41 @@ describe("JingleLibrary", () => {
       { source: "/media/a.mp3", tags: ["news"], text: "Kept." },
       { source: "/media/b.mp3", tags: [], text: "New." },
     ]);
+  });
+
+  it("plays a jingle on the active player", async () => {
+    store.activePlayerId = "kitchen";
+    const wrapper = mountLibrary([
+      { source: "/media/a.mp3", tags: [], text: "" },
+    ]);
+
+    await wrapper
+      .find('button[aria-label="Play on the active player"]')
+      .trigger("click");
+    await flushPromises();
+
+    expect(sendCommand).toHaveBeenCalledWith("ai_radio/jingles/preview", {
+      source: "/media/a.mp3",
+      player_id: "kitchen",
+    });
+  });
+
+  it("asks for a player instead of previewing into the void", async () => {
+    const { toast } = await import("vue-sonner");
+    store.activePlayerId = undefined;
+    const wrapper = mountLibrary([
+      { source: "/media/a.mp3", tags: [], text: "" },
+    ]);
+
+    await wrapper
+      .find('button[aria-label="Play on the active player"]')
+      .trigger("click");
+    await flushPromises();
+
+    expect(sendCommand).not.toHaveBeenCalledWith(
+      "ai_radio/jingles/preview",
+      expect.anything(),
+    );
+    expect(toast.error).toHaveBeenCalled();
   });
 });
