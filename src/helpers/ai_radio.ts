@@ -6,6 +6,7 @@ import type {
   AIRadioSection,
   AIRadioSectionOrderRule,
   AIRadioStation,
+  AIRadioTrackOrder,
   AIRadioWebSearchMode,
 } from "@/plugins/api/interfaces";
 import { $t, canonicalizeLocale, i18n } from "@/plugins/i18n";
@@ -120,7 +121,19 @@ export interface ShowBasics {
   defaultPlayerId: string;
   maxDurationMinutes: number;
   shuffleSourceTracks: boolean;
+  // omitted = follow shuffleSourceTracks, as stations did before the AI running order
+  trackOrder?: AIRadioTrackOrder;
+  aiOrderMaxTracks?: number;
+  aiOrderPrompt?: string;
 }
+
+export const DEFAULT_AI_ORDER_MAX_TRACKS = 100;
+// mirrors the range the server clamps to
+export const AI_ORDER_MAX_TRACKS_RANGE = { min: 5, max: 500 } as const;
+
+/** Returns how a show orders its songs, reading older drafts from their shuffle switch. */
+export const showTrackOrder = (basics: ShowBasics): AIRadioTrackOrder =>
+  basics.trackOrder ?? (basics.shuffleSourceTracks ? "shuffle" : "playlist");
 
 /** A show is just a playlist plus a reference to the host that voices it. */
 export interface ShowDraft {
@@ -362,8 +375,13 @@ export const compileShow = (draft: ShowDraft): AIRadioStation => {
     source_playlist_provider: draft.basics.sourcePlaylistProvider || "library",
     default_player_id: draft.basics.defaultPlayerId || "",
     max_duration_minutes: draft.basics.maxDurationMinutes,
-    shuffle_source_tracks: draft.basics.shuffleSourceTracks,
+    // the AI orders a random pick, so only the playlist order leaves the songs unshuffled
+    shuffle_source_tracks: showTrackOrder(draft.basics) !== "playlist",
     host_id: draft.hostId,
+    track_order: showTrackOrder(draft.basics),
+    ai_order_max_tracks:
+      draft.basics.aiOrderMaxTracks ?? DEFAULT_AI_ORDER_MAX_TRACKS,
+    ai_order_prompt: (draft.basics.aiOrderPrompt || "").trim(),
   };
 };
 
@@ -508,6 +526,12 @@ export const decompileStation = (station: AIRadioStation): DecompiledShow => {
     defaultPlayerId: station.default_player_id || "",
     maxDurationMinutes: station.max_duration_minutes || 0,
     shuffleSourceTracks: station.shuffle_source_tracks !== false,
+    trackOrder:
+      station.track_order ??
+      (station.shuffle_source_tracks !== false ? "shuffle" : "playlist"),
+    aiOrderMaxTracks:
+      station.ai_order_max_tracks ?? DEFAULT_AI_ORDER_MAX_TRACKS,
+    aiOrderPrompt: station.ai_order_prompt || "",
   };
 
   return { basics, hostId: station.host_id };

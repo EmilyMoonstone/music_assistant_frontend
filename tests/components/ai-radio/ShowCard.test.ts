@@ -1,4 +1,5 @@
 import ShowCard from "@/components/ai-radio/ShowCard.vue";
+import ShowWishDialog from "@/components/ai-radio/ShowWishDialog.vue";
 import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useShows } from "@/composables/ai-radio/useShows";
 import type { MusicAssistantApi } from "@/plugins/api";
@@ -8,7 +9,7 @@ import type {
   AIRadioStation,
   Scope,
 } from "@/plugins/api/interfaces";
-import { mount } from "@vue/test-utils";
+import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BUILTIN_ROLE_SCOPES, scopeChecker } from "../../fixtures/scopes";
 
@@ -120,5 +121,68 @@ describe("ShowCard editing rights", () => {
     await wrapper.trigger("click");
     expect(wrapper.emitted("customize")).toBeUndefined();
     expect(wrapper.find('[aria-label="Play"]').exists()).toBe(true);
+  });
+});
+
+describe("ShowCard wish for an AI running order", () => {
+  const startCalls = async () => {
+    const api = (await import("@/plugins/api")).default;
+    return vi
+      .mocked(api.sendCommand)
+      .mock.calls.filter(([command]) => command === "ai_radio/start");
+  };
+
+  const mountPlayable = (station: AIRadioStation) => {
+    hasScope.mockImplementation(scopeChecker(BUILTIN_ROLE_SCOPES.user));
+    return mount(ShowCard, { props: { show: station }, shallow: true });
+  };
+
+  afterEach(async () => {
+    const api = (await import("@/plugins/api")).default;
+    vi.mocked(api.sendCommand).mockClear();
+  });
+
+  it("asks for a wish before an AI-ordered show starts, and sends it along", async () => {
+    const wrapper = mountPlayable({
+      ...show,
+      default_player_id: "kitchen",
+      track_order: "ai",
+    });
+
+    await wrapper.find('[aria-label="Play"]').trigger("click");
+    await flushPromises();
+
+    const dialog = wrapper.findComponent(ShowWishDialog);
+    expect(dialog.props("open")).toBe(true);
+    expect(await startCalls()).toHaveLength(0);
+
+    dialog.vm.$emit("start", "calm, we are cooking");
+    await flushPromises();
+
+    expect(await startCalls()).toEqual([
+      [
+        "ai_radio/start",
+        {
+          station_id: show.id,
+          player_id_override: "kitchen",
+          listener_wish: "calm, we are cooking",
+        },
+      ],
+    ]);
+  });
+
+  it("starts any other show right away, without a wish", async () => {
+    const wrapper = mountPlayable({ ...show, default_player_id: "kitchen" });
+
+    await wrapper.find('[aria-label="Play"]').trigger("click");
+    await flushPromises();
+
+    expect(wrapper.findComponent(ShowWishDialog).props("open")).toBe(false);
+    expect(await startCalls()).toEqual([
+      [
+        "ai_radio/start",
+        { station_id: show.id, player_id_override: "kitchen" },
+      ],
+    ]);
   });
 });

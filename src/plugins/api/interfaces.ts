@@ -2035,7 +2035,15 @@ export interface AIRadioStation {
   max_duration_minutes?: number;
   shuffle_source_tracks?: boolean;
   host_id: string;
+  // how the show orders its songs; missing on servers without the AI running order
+  track_order?: AIRadioTrackOrder;
+  // how many songs the AI orders, picked at random from the playlist
+  ai_order_max_tracks?: number;
+  // replaces the built-in running-order prompt; "" = built-in
+  ai_order_prompt?: string;
 }
+
+export type AIRadioTrackOrder = "shuffle" | "playlist" | "ai";
 
 export interface AIRadioSession {
   session_id: string;

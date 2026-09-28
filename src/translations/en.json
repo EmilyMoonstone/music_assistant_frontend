@@ -1921,6 +1921,25 @@
                 "description": "AI Radio needs an AI-capable provider (e.g. Home Assistant) to generate the host.",
                 "action": "Go to Settings → Plugins"
             },
+            "running_order": {
+                "label": "Song order",
+                "help": "Shuffle the playlist, keep its own order, or let the AI put together a running order like a music director.",
+                "shuffle": "Shuffle",
+                "playlist": "Playlist order",
+                "ai": "AI running order",
+                "max_tracks": "Songs in the running order",
+                "max_tracks_help": "The AI orders a random pick of this many songs from the playlist, so every show sounds different. More songs take the AI longer before the show starts.",
+                "prompt": "Running order prompt",
+                "prompt_help": "Replaces the built-in prompt. {0} stands for the show's start time. Leave empty for the built-in one.",
+                "prompt_placeholder": "Built-in: songs that suit the time of day, a varied mix without the same artist twice in a row, and neighbours that belong together."
+            },
+            "wish": {
+                "title": "Start {0}",
+                "description": "The AI puts the running order together for this show. Anything it should keep in mind?",
+                "label": "Wish for this show",
+                "placeholder": "e.g. calm, we are cooking (optional)",
+                "start": "Start"
+            },
             "customize": {
                 "title": "Customize show",
                 "save": "Save show",
