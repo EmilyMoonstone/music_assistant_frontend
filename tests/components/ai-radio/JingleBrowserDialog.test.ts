@@ -1,4 +1,5 @@
 import JingleBrowserDialog from "@/components/ai-radio/JingleBrowserDialog.vue";
+import { store } from "@/plugins/store";
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -131,5 +132,28 @@ describe("JingleBrowserDialog", () => {
     expect(wrapper.emitted("add")?.[0][0]).toEqual([
       { source: "/media/ai_radio/calm.mp3", tags: [], text: "" },
     ]);
+  });
+
+  it("plays a listed file on the active player without selecting it", async () => {
+    store.activePlayerId = "kitchen";
+    const wrapper = (mounted = await mountOpen());
+    await click("ai_radio");
+
+    const play = document.body.querySelector<HTMLButtonElement>(
+      'button[aria-label="Play calm.mp3 on the active player"]',
+    );
+    play!.click();
+    await flushPromises();
+
+    expect(sendCommand).toHaveBeenCalledWith("ai_radio/jingles/preview", {
+      source: "/media/ai_radio/calm.mp3",
+      player_id: "kitchen",
+    });
+    expect(wrapper.emitted("add")).toBeUndefined();
+    expect(
+      [...document.body.querySelectorAll("button")].some((button) =>
+        button.textContent?.includes("Add selected (0)"),
+      ),
+    ).toBe(true);
   });
 });

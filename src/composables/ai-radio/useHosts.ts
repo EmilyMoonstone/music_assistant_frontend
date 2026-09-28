@@ -1,4 +1,5 @@
 import { useShows } from "@/composables/ai-radio/useShows";
+import { errorMessage } from "@/helpers/ai_radio";
 import { canUseQueueDj } from "@/helpers/ai_radio_access";
 import api from "@/plugins/api";
 import type {
@@ -120,6 +121,26 @@ async function browseJingles(path?: string): Promise<AIRadioJingleFolder> {
   );
 }
 
+/**
+ * Plays a jingle on the active player as an announcement, so it can be heard before it
+ * is tagged. Tells the user when no player is active instead of failing silently.
+ */
+async function previewJingle(source: string): Promise<void> {
+  const playerId = store.activePlayerId;
+  if (!playerId) {
+    toast.error($t("providers.ai_radio.effects.preview_no_player"));
+    return;
+  }
+  try {
+    await api.sendCommand("ai_radio/jingles/preview", {
+      source,
+      player_id: playerId,
+    });
+  } catch (error) {
+    toast.error(errorMessage(error));
+  }
+}
+
 /** Reads a jingle file's length, title and the words from its lyrics tag. */
 async function inspectJingle(source: string): Promise<AIRadioJingleInfo> {
   return api.sendCommand<AIRadioJingleInfo>("ai_radio/jingles/inspect", {
@@ -220,6 +241,7 @@ export function useHosts() {
     setQueueDj,
     loadQueueDjStatus,
     inspectJingle,
+    previewJingle,
     browseJingles,
   };
 }

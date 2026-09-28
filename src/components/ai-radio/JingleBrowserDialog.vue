@@ -41,22 +41,38 @@
             <Folder class="h-4 w-4 shrink-0" />
             <span class="truncate">{{ item.name }}</span>
           </button>
-          <button
+          <div
             v-for="item in folder.files"
             :key="item.path"
-            type="button"
-            class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
-            :aria-pressed="selected.has(item.path)"
-            @click="toggle(item.path)"
+            class="flex items-center hover:bg-accent"
           >
-            <SquareCheck
-              v-if="selected.has(item.path)"
-              class="h-4 w-4 shrink-0 text-primary"
-            />
-            <Square v-else class="h-4 w-4 shrink-0 text-muted-foreground" />
-            <FileAudio class="h-4 w-4 shrink-0" />
-            <span class="truncate">{{ item.name }}</span>
-          </button>
+            <button
+              type="button"
+              class="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left text-sm"
+              :aria-pressed="selected.has(item.path)"
+              @click="toggle(item.path)"
+            >
+              <SquareCheck
+                v-if="selected.has(item.path)"
+                class="h-4 w-4 shrink-0 text-primary"
+              />
+              <Square v-else class="h-4 w-4 shrink-0 text-muted-foreground" />
+              <FileAudio class="h-4 w-4 shrink-0" />
+              <span class="truncate">{{ item.name }}</span>
+            </button>
+            <Button
+              variant="ghost-icon"
+              size="icon-sm"
+              class="mr-2 shrink-0"
+              :aria-label="
+                $t('providers.ai_radio.effects.preview_file', [item.name])
+              "
+              :title="$t('providers.ai_radio.effects.preview')"
+              @click="previewJingle(item.path)"
+            >
+              <Play class="h-4 w-4" />
+            </Button>
+          </div>
           <p
             v-if="!folder.folders.length && !folder.files.length"
             class="px-3 py-6 text-center text-sm text-muted-foreground"
@@ -102,6 +118,7 @@ import {
   CornerLeftUp,
   FileAudio,
   Folder,
+  Play,
   Square,
   SquareCheck,
 } from "@lucide/vue";
@@ -115,7 +132,7 @@ const emit = defineEmits<{
   add: [jingles: HostJingle[]];
 }>();
 
-const { browseJingles, inspectJingle } = useHosts();
+const { browseJingles, inspectJingle, previewJingle } = useHosts();
 
 const folder = ref<AIRadioJingleFolder | null>(null);
 const selected = ref(new Set<string>());
