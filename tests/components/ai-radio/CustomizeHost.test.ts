@@ -216,19 +216,40 @@ describe("CustomizeHost effects", () => {
       ([command]) => command === "ai_radio/hosts/save",
     )?.[1]?.host as AIRadioHost | undefined;
 
-  it("saves the music bed and its level with the host", async () => {
+  it("saves a jingle with its tags and words, the chance and the bed", async () => {
     const wrapper = await mountEditor();
     await wrapper.find("#customize-host-name").setValue("Mika");
+    const addJingle = wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Add jingle");
+    await addJingle?.trigger("click");
+    await wrapper
+      .find('input[aria-label="Jingle file or URL"]')
+      .setValue("/media/ai_radio/untergrund.mp3");
+    const newsTag = wrapper
+      .findAll("button")
+      .find((button) => button.text() === "News");
+    await newsTag?.trigger("click");
+    await wrapper
+      .find('textarea[aria-label="What the jingle says"]')
+      .setValue("Neues aus dem Untergrund.");
+    await wrapper.find("#customize-host-jingle-chance").setValue("35");
     await wrapper.find("#customize-host-music-bed").setValue("/media/bed.mp3");
-    await wrapper.find("#customize-host-music-bed-level").setValue("-24");
 
     await save(wrapper);
 
     expect(savedHost()?.effects).toEqual({
-      news_jingle: "",
-      show_jingle: "",
+      jingles: [
+        {
+          source: "/media/ai_radio/untergrund.mp3",
+          tags: ["news"],
+          text: "Neues aus dem Untergrund.",
+        },
+      ],
+      jingle_chance: 35,
+      jingle_selection: "ai",
       music_bed: "/media/bed.mp3",
-      music_bed_level: -24,
+      music_bed_level: -18,
     });
   });
 
@@ -243,7 +264,7 @@ describe("CustomizeHost effects", () => {
     expect(wrapper.find("#customize-host-music-bed-level").exists()).toBe(true);
   });
 
-  it("shows an edited host's own jingle file for editing", async () => {
+  it("shows an edited host's jingles for editing", async () => {
     const draft: HostDraft = {
       id: "mika",
       name: "Mika",
@@ -253,8 +274,15 @@ describe("CustomizeHost effects", () => {
       options: {},
       segments: GENERIC_SEGMENT_TEMPLATES.slice(0, 1).map((s) => ({ ...s })),
       effects: {
-        newsJingle: "builtin",
-        showJingle: "/media/ai_radio/ident.mp3",
+        jingles: [
+          {
+            source: "/media/ai_radio/floskeln.mp3",
+            tags: ["general", "indie"],
+            text: "Keine Floskeln.",
+          },
+        ],
+        jingleChance: 20,
+        jingleSelection: "ai",
         musicBed: "",
         musicBedLevel: -18,
       },
@@ -269,11 +297,14 @@ describe("CustomizeHost effects", () => {
     const wrapper = mount(CustomizeHost, { props: { hostId: host.id } });
     await flushPromises();
 
-    const sourceInputs = wrapper
-      .findAll("input")
-      .filter((input) => input.attributes("aria-label")?.includes("Jingle"));
-    expect(sourceInputs.map((input) => input.element.value)).toEqual([
-      "/media/ai_radio/ident.mp3",
-    ]);
+    expect(
+      (
+        wrapper.find('input[aria-label="Jingle file or URL"]')
+          .element as HTMLInputElement
+      ).value,
+    ).toBe("/media/ai_radio/floskeln.mp3");
+    expect(wrapper.find('button[aria-label="Remove tag indie"]').exists()).toBe(
+      true,
+    );
   });
 });

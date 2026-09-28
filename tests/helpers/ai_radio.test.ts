@@ -381,28 +381,46 @@ describe("host effects", () => {
     const { host } = compileHost(draft);
 
     expect(host.effects).toEqual({
-      news_jingle: "",
-      show_jingle: "",
+      jingles: [],
+      jingle_chance: 20,
+      jingle_selection: "ai",
       music_bed: "",
       music_bed_level: DEFAULT_MUSIC_BED_LEVEL,
     });
   });
 
-  it("trims the sources and keeps them through a save and reload", () => {
+  it("cleans up the library and keeps it through a save and reload", () => {
     const { host, sections } = compileHost({
       ...draft,
       effects: {
-        newsJingle: "builtin",
-        showJingle: " /media/ai_radio/ident.mp3 ",
+        jingles: [
+          {
+            source: " /media/ai_radio/untergrund.mp3 ",
+            tags: ["news", "Late Night", "news", " "],
+            text: " Neues aus dem Untergrund. ",
+          },
+          { source: "  ", tags: ["news"], text: "unfinished row" },
+          { source: "builtin", tags: [], text: "" },
+        ],
+        jingleChance: 35,
+        jingleSelection: "random",
         musicBed: "https://example.test/bed.mp3",
         musicBedLevel: -24,
       },
     });
 
-    expect(host.effects?.show_jingle).toBe("/media/ai_radio/ident.mp3");
+    expect(host.effects?.jingles).toEqual([
+      {
+        source: "/media/ai_radio/untergrund.mp3",
+        tags: ["news", "late_night"],
+        text: "Neues aus dem Untergrund.",
+      },
+      { source: "builtin", tags: [], text: "" },
+    ]);
     expect(decompileHost(host, sections).effects).toEqual({
-      newsJingle: "builtin",
-      showJingle: "/media/ai_radio/ident.mp3",
+      jingles: host.effects?.jingles,
+      jingleChance: 35,
+      jingleSelection: "random",
       musicBed: "https://example.test/bed.mp3",
       musicBedLevel: -24,
     });

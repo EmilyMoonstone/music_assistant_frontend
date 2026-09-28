@@ -177,42 +177,55 @@
           </p>
         </CardHeader>
         <CardContent class="grid gap-4 md:grid-cols-2">
-          <div
-            v-for="field in JINGLE_FIELDS"
-            :key="field"
-            class="flex flex-col gap-1.5"
-          >
+          <div class="flex flex-col gap-1.5 md:col-span-2">
             <FieldLabel
-              :html-for="`customize-host-${field}`"
-              :label="$t(`providers.ai_radio.effects.${field}`)"
-              :description="$t(`providers.ai_radio.effects.${field}_help`)"
+              :label="$t('providers.ai_radio.effects.jingles')"
+              :description="$t('providers.ai_radio.effects.jingles_help')"
             />
-            <Select
-              :model-value="jingleMode(field)"
-              @update:model-value="setJingleMode(field, String($event))"
-            >
-              <SelectTrigger :id="`customize-host-${field}`" class="w-full">
+            <JingleLibrary v-model="effects.jingles" />
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <FieldLabel
+              html-for="customize-host-jingle-chance"
+              :label="$t('providers.ai_radio.effects.jingleChance')"
+              :description="$t('providers.ai_radio.effects.jingleChance_help')"
+            />
+            <Input
+              id="customize-host-jingle-chance"
+              v-model.number="effects.jingleChance"
+              type="number"
+              class="h-8"
+              min="0"
+              max="100"
+              step="5"
+            />
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <FieldLabel
+              html-for="customize-host-jingle-selection"
+              :label="$t('providers.ai_radio.effects.jingleSelection')"
+              :description="
+                $t('providers.ai_radio.effects.jingleSelection_help')
+              "
+            />
+            <Select v-model="effects.jingleSelection">
+              <SelectTrigger
+                id="customize-host-jingle-selection"
+                class="w-full"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="off">
-                  {{ $t("providers.ai_radio.effects.off") }}
+                <SelectItem value="ai">
+                  {{ $t("providers.ai_radio.effects.selection_ai") }}
                 </SelectItem>
-                <SelectItem :value="BUILTIN_JINGLE">
-                  {{ $t("providers.ai_radio.effects.builtin") }}
-                </SelectItem>
-                <SelectItem value="custom">
-                  {{ $t("providers.ai_radio.effects.custom") }}
+                <SelectItem value="random">
+                  {{ $t("providers.ai_radio.effects.selection_random") }}
                 </SelectItem>
               </SelectContent>
             </Select>
-            <Input
-              v-if="jingleMode(field) === 'custom'"
-              v-model="effects[field]"
-              class="h-8"
-              :placeholder="$t('providers.ai_radio.effects.source_placeholder')"
-              :aria-label="$t(`providers.ai_radio.effects.${field}`)"
-            />
           </div>
 
           <div class="flex flex-col gap-1.5">
@@ -334,8 +347,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useHosts } from "@/composables/ai-radio/useHosts";
 import { useShows } from "@/composables/ai-radio/useShows";
+import JingleLibrary from "@/components/ai-radio/JingleLibrary.vue";
 import {
-  BUILTIN_JINGLE,
   compileHost,
   deepClone,
   decompileHost,
@@ -355,7 +368,7 @@ import {
 import { eventbus } from "@/plugins/eventbus";
 import { $t, canonicalizeLocale, getLocaleOptions, i18n } from "@/plugins/i18n";
 import { ArrowLeft, Plus, Trash2 } from "@lucide/vue";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { toast } from "vue-sonner";
 
@@ -420,37 +433,10 @@ const languageSelectValue = computed({
   },
 });
 
-const JINGLE_FIELDS = ["newsJingle", "showJingle"] as const;
-type JingleField = (typeof JINGLE_FIELDS)[number];
-type JingleMode = "off" | typeof BUILTIN_JINGLE | "custom";
-
-// the draft is null while loading, so the card edits a stand-in until the host is there
-const effects = computed<HostEffects>(() => {
-  if (!draft.value) return defaultHostEffects();
-  draft.value.effects ??= defaultHostEffects();
-  return draft.value.effects;
-});
-
-// "custom" with nothing typed yet would read as off, so the choice is remembered per field
-const customJingle = reactive<Record<JingleField, boolean>>({
-  newsJingle: false,
-  showJingle: false,
-});
-
-function jingleMode(field: JingleField): JingleMode {
-  const source = effects.value[field];
-  if (source === BUILTIN_JINGLE) return BUILTIN_JINGLE;
-  return source || customJingle[field] ? "custom" : "off";
-}
-
-function setJingleMode(field: JingleField, mode: string) {
-  customJingle[field] = mode === "custom";
-  if (mode === BUILTIN_JINGLE) {
-    effects.value[field] = BUILTIN_JINGLE;
-  } else if (mode === "off" || effects.value[field] === BUILTIN_JINGLE) {
-    effects.value[field] = "";
-  }
-}
+// every loaded draft carries its effects, the stand-in only covers the moment before it loads
+const effects = computed<HostEffects>(
+  () => draft.value?.effects ?? defaultHostEffects(),
+);
 
 function updateSegment(index: number, segment: ShowSegment) {
   draft.value?.segments.splice(index, 1, segment);
@@ -662,6 +648,8 @@ onMounted(async () => {
         ? deepClone(props.presetDraft)
         : newHostDraft();
     }
+    // a preset draft is built without effects, and the card edits them in place
+    draft.value.effects ??= defaultHostEffects();
     loadOptionRows(draft.value.options);
     originalSnapshot = JSON.stringify(draft.value);
   } catch (error) {

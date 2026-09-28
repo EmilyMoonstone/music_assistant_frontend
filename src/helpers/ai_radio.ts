@@ -3,6 +3,7 @@ import type {
   AIRadioFlowItem,
   AIRadioHost,
   AIRadioHostEffects,
+  AIRadioJingle,
   AIRadioOptionalGuards,
   AIRadioSection,
   AIRadioSectionOrderRule,
@@ -392,26 +393,52 @@ export interface HostDraft {
   effects?: HostEffects;
 }
 
-/** Sounds a host dresses its breaks with: "" = off, BUILTIN_JINGLE = the shipped gong, else a path or URL. */
+/** Sounds a host dresses its breaks with: a jingle library and a music bed ("" = none). */
 export interface HostEffects {
-  newsJingle: string;
-  showJingle: string;
+  jingles: HostJingle[];
+  // percent of plain transitions that open with a general jingle
+  jingleChance: number;
+  jingleSelection: JingleSelection;
   musicBed: string;
   // dB the bed sits below the voice, within MUSIC_BED_LEVEL_RANGE
   musicBedLevel: number;
 }
 
+/** One jingle of a host's library: BUILTIN_JINGLE = the shipped gong, else a path or URL. */
+export type HostJingle = AIRadioJingle;
+export type JingleSelection = "ai" | "random";
+
 export const BUILTIN_JINGLE = "builtin";
 export const DEFAULT_MUSIC_BED_LEVEL = -18;
+export const DEFAULT_JINGLE_CHANCE = 20;
 // mirrors the range the server clamps to
 export const MUSIC_BED_LEVEL_RANGE = { min: -40, max: -6 } as const;
+// tags the server acts on: what a break is, and the time of day it airs at
+export const JINGLE_OCCASION_TAGS = [
+  "general",
+  "news",
+  "weather",
+  "intro",
+  "outro",
+] as const;
+export const JINGLE_TIME_TAGS = [
+  "morning",
+  "daytime",
+  "evening",
+  "late_night",
+] as const;
 
 export const defaultHostEffects = (): HostEffects => ({
-  newsJingle: "",
-  showJingle: "",
+  jingles: [],
+  jingleChance: DEFAULT_JINGLE_CHANCE,
+  jingleSelection: "ai",
   musicBed: "",
   musicBedLevel: DEFAULT_MUSIC_BED_LEVEL,
 });
+
+/** Normalizes a free tag the way the server stores it: lowercase, words joined by "_". */
+export const normalizeJingleTag = (tag: string): string =>
+  tag.trim().toLowerCase().split(/\s+/).filter(Boolean).join("_");
 
 export interface CompiledHost {
   host: AIRadioHost;
@@ -449,8 +476,16 @@ export const compileHost = (draft: HostDraft): CompiledHost => {
 };
 
 const compileEffects = (effects: HostEffects): AIRadioHostEffects => ({
-  news_jingle: effects.newsJingle.trim(),
-  show_jingle: effects.showJingle.trim(),
+  // a row left without a source is an unfinished edit, not a jingle
+  jingles: effects.jingles
+    .map((jingle) => ({
+      source: jingle.source.trim(),
+      tags: [...new Set(jingle.tags.map(normalizeJingleTag).filter(Boolean))],
+      text: jingle.text.trim(),
+    }))
+    .filter((jingle) => jingle.source),
+  jingle_chance: effects.jingleChance,
+  jingle_selection: effects.jingleSelection,
   music_bed: effects.musicBed.trim(),
   music_bed_level: effects.musicBedLevel,
 });
@@ -458,8 +493,14 @@ const compileEffects = (effects: HostEffects): AIRadioHostEffects => ({
 const decompileEffects = (effects?: AIRadioHostEffects): HostEffects =>
   effects
     ? {
-        newsJingle: effects.news_jingle || "",
-        showJingle: effects.show_jingle || "",
+        jingles: (effects.jingles || []).map((jingle) => ({
+          source: jingle.source,
+          tags: [...jingle.tags],
+          text: jingle.text || "",
+        })),
+        jingleChance: effects.jingle_chance ?? DEFAULT_JINGLE_CHANCE,
+        jingleSelection:
+          effects.jingle_selection === "random" ? "random" : "ai",
         musicBed: effects.music_bed || "",
         musicBedLevel: effects.music_bed_level ?? DEFAULT_MUSIC_BED_LEVEL,
       }
