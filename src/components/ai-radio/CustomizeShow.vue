@@ -145,21 +145,66 @@
                 </NumberFieldContent>
               </NumberField>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex flex-col gap-1.5">
               <FieldLabel
-                html-for="customize-shuffle-source-tracks"
-                :label="$t('providers.ai_radio.fields.shuffle_playlist_tracks')"
-                :description="
-                  $t(
-                    'providers.ai_radio.field_descriptions.shuffle_playlist_tracks',
-                  )
-                "
+                html-for="customize-track-order"
+                :label="$t('providers.ai_radio.running_order.label')"
+                :description="$t('providers.ai_radio.running_order.help')"
               />
-              <Switch
-                id="customize-shuffle-source-tracks"
-                v-model="draft.basics.shuffleSourceTracks"
-              />
+              <Select v-model="trackOrder">
+                <SelectTrigger id="customize-track-order" class="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="shuffle">
+                    {{ $t("providers.ai_radio.running_order.shuffle") }}
+                  </SelectItem>
+                  <SelectItem value="playlist">
+                    {{ $t("providers.ai_radio.running_order.playlist") }}
+                  </SelectItem>
+                  <SelectItem value="ai">
+                    {{ $t("providers.ai_radio.running_order.ai") }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+            <template v-if="trackOrder === 'ai'">
+              <div class="flex flex-col gap-1.5">
+                <FieldLabel
+                  html-for="customize-ai-order-max-tracks"
+                  :label="$t('providers.ai_radio.running_order.max_tracks')"
+                  :description="
+                    $t('providers.ai_radio.running_order.max_tracks_help')
+                  "
+                />
+                <Input
+                  id="customize-ai-order-max-tracks"
+                  v-model.number="draft.basics.aiOrderMaxTracks"
+                  type="number"
+                  :min="AI_ORDER_MAX_TRACKS_RANGE.min"
+                  :max="AI_ORDER_MAX_TRACKS_RANGE.max"
+                />
+              </div>
+              <div class="flex flex-col gap-1.5 md:col-span-2">
+                <FieldLabel
+                  html-for="customize-ai-order-prompt"
+                  :label="$t('providers.ai_radio.running_order.prompt')"
+                  :description="
+                    $t('providers.ai_radio.running_order.prompt_help', [
+                      '<timestamp>',
+                    ])
+                  "
+                />
+                <Textarea
+                  id="customize-ai-order-prompt"
+                  v-model="draft.basics.aiOrderPrompt"
+                  rows="4"
+                  :placeholder="
+                    $t('providers.ai_radio.running_order.prompt_placeholder')
+                  "
+                />
+              </div>
+            </template>
           </AccordionContent>
         </AccordionItem>
       </Accordion>
@@ -197,15 +242,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
-import { Switch } from "@/components/ui/switch";
 import { useOrderedPlayers } from "@/composables/useOrderedPlayers";
 import { useHosts } from "@/composables/ai-radio/useHosts";
 import { useShows } from "@/composables/ai-radio/useShows";
 import {
+  AI_ORDER_MAX_TRACKS_RANGE,
   compileShow,
   decompileStation,
+  DEFAULT_AI_ORDER_MAX_TRACKS,
   errorMessage,
   NONE_SELECT_VALUE,
+  showTrackOrder,
   type ShowDraft,
 } from "@/helpers/ai_radio";
 import { eventbus } from "@/plugins/eventbus";
@@ -214,6 +261,8 @@ import { ArrowLeft } from "@lucide/vue";
 import { computed, onMounted, ref } from "vue";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { toast } from "vue-sonner";
+import { Textarea } from "@/components/ui/textarea";
+import type { AIRadioTrackOrder } from "@/plugins/api/interfaces";
 
 const props = defineProps<{
   stationId: string;
@@ -234,6 +283,16 @@ const loading = ref(true);
 const loadError = ref("");
 const saving = ref(false);
 const draft = ref<ShowDraft | null>(null);
+/** How the show orders its songs; picking one keeps the old shuffle switch in step. */
+const trackOrder = computed<AIRadioTrackOrder>({
+  get: () => (draft.value ? showTrackOrder(draft.value.basics) : "shuffle"),
+  set: (value) => {
+    if (!draft.value) return;
+    draft.value.basics.trackOrder = value;
+    draft.value.basics.shuffleSourceTracks = value !== "playlist";
+    draft.value.basics.aiOrderMaxTracks ??= DEFAULT_AI_ORDER_MAX_TRACKS;
+  },
+});
 let originalSnapshot = "";
 
 const dirty = computed(

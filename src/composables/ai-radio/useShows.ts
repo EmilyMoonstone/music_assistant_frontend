@@ -65,6 +65,8 @@ interface StartShowOptions {
   sourcePlaylistIdOverride?: string;
   sourcePlaylistProviderOverride?: string;
   dynamicSourcePlaytimeCapOverride?: number;
+  // a wish for this show only, followed by an AI running order
+  listenerWish?: string;
 }
 
 const sortByName = <T extends { name: string }>(items: T[]): T[] => {
@@ -246,6 +248,9 @@ async function startShow(
     if (typeof overrides?.dynamicSourcePlaytimeCapOverride === "number") {
       args.dynamic_source_playtime_cap_override =
         overrides.dynamicSourcePlaytimeCapOverride;
+    }
+    if (overrides?.listenerWish?.trim()) {
+      args.listener_wish = overrides.listenerWish.trim();
     }
     const result = await api.sendCommand<AIRadioSession>(
       "ai_radio/start",

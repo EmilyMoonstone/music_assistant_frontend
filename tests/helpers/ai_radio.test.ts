@@ -5,6 +5,7 @@ import {
   decompileStation,
   DEFAULT_MUSIC_BED_LEVEL,
   defaultHostEffects,
+  DEFAULT_AI_ORDER_MAX_TRACKS,
   errorMessage,
   GENERIC_SEGMENT_TEMPLATES,
   MERGE_SECTION_PROMPT,
@@ -466,5 +467,72 @@ describe("allowPost", () => {
     expect(round.segments[0].allowPost).toBe(true);
     const recompiled = compileHost(round);
     expect(recompiled.sections[0].allow_post).toBe(true);
+  });
+});
+
+describe("show running order", () => {
+  const basics = {
+    name: "Musikentdecker",
+    sourcePlaylistId: "42",
+    sourcePlaylistProvider: "library",
+    defaultPlayerId: "",
+    maxDurationMinutes: 0,
+    shuffleSourceTracks: true,
+  };
+
+  it("compiles an AI running order, which always draws a shuffled pick", () => {
+    const station = compileShow({
+      basics: {
+        ...basics,
+        shuffleSourceTracks: false,
+        trackOrder: "ai",
+        aiOrderMaxTracks: 60,
+        aiOrderPrompt: "  Only slow songs.  ",
+      },
+      hostId: "mika",
+    });
+
+    expect(station.track_order).toBe("ai");
+    expect(station.shuffle_source_tracks).toBe(true);
+    expect(station.ai_order_max_tracks).toBe(60);
+    expect(station.ai_order_prompt).toBe("Only slow songs.");
+  });
+
+  it("keeps an older draft's shuffle switch as its order", () => {
+    const station = compileShow({
+      basics: { ...basics, shuffleSourceTracks: false },
+      hostId: "mika",
+    });
+
+    expect(station.track_order).toBe("playlist");
+    expect(station.shuffle_source_tracks).toBe(false);
+    expect(station.ai_order_max_tracks).toBe(DEFAULT_AI_ORDER_MAX_TRACKS);
+  });
+
+  it("reads a station from a server without the running order by its shuffle switch", () => {
+    const { basics: shuffled } = decompileStation(
+      makeStation({ shuffle_source_tracks: true }),
+    );
+    const { basics: ordered } = decompileStation(
+      makeStation({ shuffle_source_tracks: false }),
+    );
+
+    expect(shuffled.trackOrder).toBe("shuffle");
+    expect(ordered.trackOrder).toBe("playlist");
+    expect(ordered.aiOrderMaxTracks).toBe(DEFAULT_AI_ORDER_MAX_TRACKS);
+  });
+
+  it("round-trips an AI running order", () => {
+    const station = makeStation({
+      track_order: "ai",
+      ai_order_max_tracks: 80,
+      ai_order_prompt: "Late night only.",
+    });
+
+    expect(decompileStation(station).basics).toMatchObject({
+      trackOrder: "ai",
+      aiOrderMaxTracks: 80,
+      aiOrderPrompt: "Late night only.",
+    });
   });
 });

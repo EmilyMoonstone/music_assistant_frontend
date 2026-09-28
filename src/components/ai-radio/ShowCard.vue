@@ -140,10 +140,16 @@
         />
       </button>
     </div>
+    <ShowWishDialog
+      v-model:open="wishDialogOpen"
+      :show-name="show.name"
+      @start="onWish"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import ShowWishDialog from "@/components/ai-radio/ShowWishDialog.vue";
 import {
   bannerBackground,
   itemInitials,
@@ -189,7 +195,7 @@ import {
   Square,
   TriangleAlert,
 } from "@lucide/vue";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { toast } from "vue-sonner";
 
 const props = defineProps<{
@@ -295,7 +301,10 @@ function confirmSwitchAndPlay(
     onConfirm: async () => {
       try {
         await stopShow(otherSession.session_id);
-        await startShow(props.show.id, { playerIdOverride: playerId });
+        await startShow(props.show.id, {
+          playerIdOverride: playerId,
+          listenerWish: listenerWish.value,
+        });
       } catch (error) {
         const message = errorMessage(error);
         toast.error($t("providers.ai_radio.card.start_failed", [message]));
@@ -305,19 +314,42 @@ function confirmSwitchAndPlay(
   });
 }
 
+const wishDialogOpen = ref(false);
+const pendingPlayerId = ref("");
+// the wish of the show being started; a show started without the dialog has none
+const listenerWish = ref("");
+
 async function onPlay() {
   const playerId = resolveShowPlayerId(props.show, store.activePlayerId);
   if (!playerId) {
     toast.error($t("providers.ai_radio.card.no_player"));
     return;
   }
+  // an AI running order can follow a wish for this show, so it is asked for first
+  if (props.show.track_order === "ai") {
+    pendingPlayerId.value = playerId;
+    wishDialogOpen.value = true;
+    return;
+  }
+  await playOn(playerId);
+}
+
+async function onWish(wish: string) {
+  listenerWish.value = wish;
+  await playOn(pendingPlayerId.value);
+}
+
+async function playOn(playerId: string) {
   const otherRunning = findOtherRunningSession();
   if (otherRunning) {
     confirmSwitchAndPlay(otherRunning, playerId);
     return;
   }
   try {
-    await startShow(props.show.id, { playerIdOverride: playerId });
+    await startShow(props.show.id, {
+      playerIdOverride: playerId,
+      listenerWish: listenerWish.value,
+    });
   } catch (error) {
     // The server localizes error details, so the max-concurrent reason can't be
     // matched on text. Reconcile status instead: if another show turns out to be
