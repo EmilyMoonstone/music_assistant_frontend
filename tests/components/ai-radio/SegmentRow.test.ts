@@ -20,10 +20,14 @@ vi.mock("vue-sonner", () => ({
 }));
 
 const PLACEHOLDER_TOKENS = [
-  "<next_songinfo>",
   "<prev_songinfo>",
+  "<next_songinfo>",
+  "<very_next_songinfo>",
   "<timestamp>",
   "<weather_hourly>",
+  "<weather_daily>",
+  "<recent_breaks>",
+  "<recent_news>",
 ];
 
 const segment: ShowSegment = {

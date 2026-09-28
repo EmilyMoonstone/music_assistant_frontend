@@ -205,10 +205,14 @@ import { toast } from "vue-sonner";
 
 // listed literally so translators never handle raw <placeholder> markup
 const PROMPT_PLACEHOLDERS = [
-  "<next_songinfo>",
   "<prev_songinfo>",
+  "<next_songinfo>",
+  "<very_next_songinfo>",
   "<timestamp>",
   "<weather_hourly>",
+  "<weather_daily>",
+  "<recent_breaks>",
+  "<recent_news>",
 ];
 
 const props = defineProps<{
