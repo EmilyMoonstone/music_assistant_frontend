@@ -433,12 +433,10 @@ const languageSelectValue = computed({
   },
 });
 
-// the draft is null while loading, so the card edits a stand-in until the host is there
-const effects = computed<HostEffects>(() => {
-  if (!draft.value) return defaultHostEffects();
-  draft.value.effects ??= defaultHostEffects();
-  return draft.value.effects;
-});
+// every loaded draft carries its effects, the stand-in only covers the moment before it loads
+const effects = computed<HostEffects>(
+  () => draft.value?.effects ?? defaultHostEffects(),
+);
 
 function updateSegment(index: number, segment: ShowSegment) {
   draft.value?.segments.splice(index, 1, segment);
@@ -649,6 +647,8 @@ onMounted(async () => {
         ? deepClone(props.presetDraft)
         : newHostDraft();
     }
+    // a preset draft is built without effects, and the card edits them in place
+    draft.value.effects ??= defaultHostEffects();
     loadOptionRows(draft.value.options);
     originalSnapshot = JSON.stringify(draft.value);
   } catch (error) {
