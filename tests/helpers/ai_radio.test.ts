@@ -336,6 +336,7 @@ describe("decompileHost", () => {
         name: legacySection.name,
         prompt: legacySection.prompt,
         webSearch: "allow",
+        allowPost: false,
         maxChars: 500,
         plays: { kind: "every_n_songs", n: 3 },
       },
@@ -412,5 +413,40 @@ describe("host effects", () => {
     delete host.effects;
 
     expect(decompileHost(host, sections).effects).toEqual(defaultHostEffects());
+  });
+});
+
+describe("allowPost", () => {
+  const makeHostDraft = (allowPost: boolean): HostDraft => ({
+    id: "rick",
+    name: "Rick",
+    instructions: "Persona.",
+    ttsEngine: "",
+    language: "",
+    options: {},
+    segments: [{ ...artistFactTemplate, allowPost }],
+  });
+
+  it("compiles each segment's switch into allow_post on its section", () => {
+    const { sections } = compileHost(makeHostDraft(true));
+    expect(sections.find((s) => s.id === "rick_artist_fact")?.allow_post).toBe(
+      true,
+    );
+  });
+
+  it("decompiles a section the server stored without allow_post as off", () => {
+    // the server only stores the key when it is on
+    const { host, sections } = compileHost(makeHostDraft(false));
+    const stored = sections.map(({ allow_post: _dropped, ...rest }) => rest);
+    const round = decompileHost(host, stored);
+    expect(round.segments[0].allowPost).toBe(false);
+  });
+
+  it("keeps the switch on across a save and reload", () => {
+    const { host, sections } = compileHost(makeHostDraft(true));
+    const round = decompileHost(host, sections);
+    expect(round.segments[0].allowPost).toBe(true);
+    const recompiled = compileHost(round);
+    expect(recompiled.sections[0].allow_post).toBe(true);
   });
 });

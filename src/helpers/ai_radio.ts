@@ -95,6 +95,7 @@ export interface ShowSegment {
   name: string;
   prompt: string;
   webSearch: AIRadioWebSearchMode;
+  allowPost: boolean;
   maxChars: number;
   plays: PlaysRule;
 }
@@ -147,6 +148,7 @@ export const GENERIC_SEGMENT_TEMPLATES: ShowSegment[] = [
     prompt:
       "The next track is <next_songinfo>. Open the program like a polished radio host: brief welcome, confident energy, one concrete hook about the song or artist, and a clean handoff into the music.",
     webSearch: "disabled",
+    allowPost: false,
     maxChars: 650,
     plays: { kind: "start" },
   },
@@ -155,6 +157,7 @@ export const GENERIC_SEGMENT_TEMPLATES: ShowSegment[] = [
     name: "Transition",
     prompt: SONG_TRANSITION_PROMPT,
     webSearch: "allow",
+    allowPost: false,
     maxChars: 650,
     plays: { kind: "every_song" },
   },
@@ -164,6 +167,7 @@ export const GENERIC_SEGMENT_TEMPLATES: ShowSegment[] = [
     prompt:
       "Using <weather_hourly> and <timestamp>, deliver a short spoken weather update with the current outlook, a useful next-hours summary, and smooth radio phrasing.",
     webSearch: "disabled",
+    allowPost: false,
     maxChars: 500,
     plays: { kind: "every_n_min", n: 60 },
   },
@@ -173,6 +177,7 @@ export const GENERIC_SEGMENT_TEMPLATES: ShowSegment[] = [
     prompt:
       "Create a short global news bulletin anchored to <timestamp>. Use web search. Include two or three current items that are broadly relevant, clearly separated, fact-focused, and written for spoken delivery.",
     webSearch: "force",
+    allowPost: false,
     maxChars: 700,
     plays: { kind: "every_n_min", n: 60 },
   },
@@ -182,6 +187,7 @@ export const GENERIC_SEGMENT_TEMPLATES: ShowSegment[] = [
     prompt:
       "The next track is <next_songinfo>. Share one genuinely interesting fact about the track or its artist, keeping it precise, engaging, and free of generic trivia.",
     webSearch: "allow",
+    allowPost: false,
     maxChars: 500,
     plays: { kind: "every_n_songs", n: 3 },
   },
@@ -191,6 +197,7 @@ export const GENERIC_SEGMENT_TEMPLATES: ShowSegment[] = [
     prompt:
       "The last track played was <prev_songinfo>. Close the program with a memorable sign-off: brief reflection, warm farewell, and language that sounds like the end of a real radio segment.",
     webSearch: "disabled",
+    allowPost: false,
     maxChars: 650,
     plays: { kind: "end" },
   },
@@ -305,6 +312,7 @@ const compileSegments = (
       name: segment.name,
       type: "ai_text",
       web_search: segment.webSearch,
+      allow_post: segment.allowPost,
       prompt: segment.prompt,
       constraints: { max_chars: segment.maxChars },
     });
@@ -583,6 +591,7 @@ export const decompileHost = (
       name: section.name,
       prompt: section.prompt,
       webSearch: section.web_search || "disabled",
+      allowPost: section.allow_post ?? false,
       maxChars: section.constraints?.max_chars || 0,
       plays,
     };
