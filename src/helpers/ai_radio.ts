@@ -2,6 +2,7 @@ import type {
   AIRadioAlternativeChoice,
   AIRadioFlowItem,
   AIRadioHost,
+  AIRadioHostEffects,
   AIRadioOptionalGuards,
   AIRadioSection,
   AIRadioSectionOrderRule,
@@ -379,7 +380,30 @@ export interface HostDraft {
   // options: free-form key/value pairs passed straight through to the TTS engine
   options: Record<string, unknown>;
   segments: ShowSegment[];
+  // effects: omitted = every sound off
+  effects?: HostEffects;
 }
+
+/** Sounds a host dresses its breaks with: "" = off, BUILTIN_JINGLE = the shipped gong, else a path or URL. */
+export interface HostEffects {
+  newsJingle: string;
+  showJingle: string;
+  musicBed: string;
+  // dB the bed sits below the voice, within MUSIC_BED_LEVEL_RANGE
+  musicBedLevel: number;
+}
+
+export const BUILTIN_JINGLE = "builtin";
+export const DEFAULT_MUSIC_BED_LEVEL = -18;
+// mirrors the range the server clamps to
+export const MUSIC_BED_LEVEL_RANGE = { min: -40, max: -6 } as const;
+
+export const defaultHostEffects = (): HostEffects => ({
+  newsJingle: "",
+  showJingle: "",
+  musicBed: "",
+  musicBedLevel: DEFAULT_MUSIC_BED_LEVEL,
+});
 
 export interface CompiledHost {
   host: AIRadioHost;
@@ -410,10 +434,28 @@ export const compileHost = (draft: HostDraft): CompiledHost => {
       section_ids: sections.map((section) => section.id),
       section_order: sectionOrder,
       merge_section_id: mergeSectionId,
+      effects: compileEffects(draft.effects ?? defaultHostEffects()),
     },
     sections,
   };
 };
+
+const compileEffects = (effects: HostEffects): AIRadioHostEffects => ({
+  news_jingle: effects.newsJingle.trim(),
+  show_jingle: effects.showJingle.trim(),
+  music_bed: effects.musicBed.trim(),
+  music_bed_level: effects.musicBedLevel,
+});
+
+const decompileEffects = (effects?: AIRadioHostEffects): HostEffects =>
+  effects
+    ? {
+        newsJingle: effects.news_jingle || "",
+        showJingle: effects.show_jingle || "",
+        musicBed: effects.music_bed || "",
+        musicBedLevel: effects.music_bed_level ?? DEFAULT_MUSIC_BED_LEVEL,
+      }
+    : defaultHostEffects();
 
 export interface DecompiledShow {
   basics: ShowBasics;
@@ -556,6 +598,7 @@ export const decompileHost = (
     language: host.language || "",
     options: host.options || {},
     segments,
+    effects: decompileEffects(host.effects),
   };
 };
 

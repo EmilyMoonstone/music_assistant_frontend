@@ -3,6 +3,8 @@ import {
   compileShow,
   decompileHost,
   decompileStation,
+  DEFAULT_MUSIC_BED_LEVEL,
+  defaultHostEffects,
   errorMessage,
   GENERIC_SEGMENT_TEMPLATES,
   MERGE_SECTION_PROMPT,
@@ -360,5 +362,55 @@ describe("decompileHost", () => {
     expect(
       item && "OPTIONAL" in item ? item.OPTIONAL.chance : undefined,
     ).toBeCloseTo(2 / 3);
+  });
+});
+
+describe("host effects", () => {
+  const draft: HostDraft = {
+    id: "mika",
+    name: "Mika",
+    instructions: "Persona.",
+    ttsEngine: "",
+    language: "",
+    options: {},
+    segments: GENERIC_SEGMENT_TEMPLATES.slice(0, 1).map((s) => ({ ...s })),
+  };
+
+  it("compiles a draft without effects to every sound off", () => {
+    const { host } = compileHost(draft);
+
+    expect(host.effects).toEqual({
+      news_jingle: "",
+      show_jingle: "",
+      music_bed: "",
+      music_bed_level: DEFAULT_MUSIC_BED_LEVEL,
+    });
+  });
+
+  it("trims the sources and keeps them through a save and reload", () => {
+    const { host, sections } = compileHost({
+      ...draft,
+      effects: {
+        newsJingle: "builtin",
+        showJingle: " /media/ai_radio/ident.mp3 ",
+        musicBed: "https://example.test/bed.mp3",
+        musicBedLevel: -24,
+      },
+    });
+
+    expect(host.effects?.show_jingle).toBe("/media/ai_radio/ident.mp3");
+    expect(decompileHost(host, sections).effects).toEqual({
+      newsJingle: "builtin",
+      showJingle: "/media/ai_radio/ident.mp3",
+      musicBed: "https://example.test/bed.mp3",
+      musicBedLevel: -24,
+    });
+  });
+
+  it("reads a host from a server without effects as every sound off", () => {
+    const { host, sections } = compileHost(draft);
+    delete host.effects;
+
+    expect(decompileHost(host, sections).effects).toEqual(defaultHostEffects());
   });
 });

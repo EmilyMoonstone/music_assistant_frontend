@@ -1921,6 +1921,22 @@
                 "description": "AI Radio needs an AI-capable provider (e.g. Home Assistant) to generate the host.",
                 "action": "Go to Settings → Plugins"
             },
+            "effects": {
+                "title": "Sound effects",
+                "help": "Dress this host's breaks with jingles and a music bed. Use a file in Home Assistant's media folder or a URL.",
+                "off": "Off",
+                "builtin": "Built-in gong",
+                "custom": "Own file or URL",
+                "newsJingle": "Jingle before the news",
+                "newsJingle_help": "Plays ahead of every break that searches the web (news). The host starts talking just before it ends.",
+                "showJingle": "Jingle for intro and sign-off",
+                "showJingle_help": "Plays ahead of the first and the last break of a show.",
+                "musicBed": "Music bed",
+                "musicBed_help": "Loops quietly under every break and fades out after the last word. Leave empty for none.",
+                "musicBedLevel": "Music bed level (dB)",
+                "musicBedLevel_help": "How far below the voice the bed sits, from -40 (barely audible) to -6 (prominent).",
+                "source_placeholder": "\/media\/ai_radio\/jingle.mp3"
+            },
             "customize": {
                 "title": "Customize show",
                 "save": "Save show",

@@ -209,3 +209,71 @@ describe("CustomizeHost save", () => {
     expect(toast.error).not.toHaveBeenCalled();
   });
 });
+
+describe("CustomizeHost effects", () => {
+  const savedHost = () =>
+    sendCommand.mock.calls.find(
+      ([command]) => command === "ai_radio/hosts/save",
+    )?.[1]?.host as AIRadioHost | undefined;
+
+  it("saves the music bed and its level with the host", async () => {
+    const wrapper = await mountEditor();
+    await wrapper.find("#customize-host-name").setValue("Mika");
+    await wrapper.find("#customize-host-music-bed").setValue("/media/bed.mp3");
+    await wrapper.find("#customize-host-music-bed-level").setValue("-24");
+
+    await save(wrapper);
+
+    expect(savedHost()?.effects).toEqual({
+      news_jingle: "",
+      show_jingle: "",
+      music_bed: "/media/bed.mp3",
+      music_bed_level: -24,
+    });
+  });
+
+  it("only offers the bed level once a bed is set", async () => {
+    const wrapper = await mountEditor();
+
+    expect(wrapper.find("#customize-host-music-bed-level").exists()).toBe(
+      false,
+    );
+    await wrapper.find("#customize-host-music-bed").setValue("/media/bed.mp3");
+
+    expect(wrapper.find("#customize-host-music-bed-level").exists()).toBe(true);
+  });
+
+  it("shows an edited host's own jingle file for editing", async () => {
+    const draft: HostDraft = {
+      id: "mika",
+      name: "Mika",
+      instructions: "Persona.",
+      ttsEngine: "",
+      language: "",
+      options: {},
+      segments: GENERIC_SEGMENT_TEMPLATES.slice(0, 1).map((s) => ({ ...s })),
+      effects: {
+        newsJingle: "builtin",
+        showJingle: "/media/ai_radio/ident.mp3",
+        musicBed: "",
+        musicBedLevel: -18,
+      },
+    };
+    const { host, sections } = compileHost(draft);
+    sendCommand.mockImplementation(async (command) => {
+      if (command === "ai_radio/hosts/get") return host;
+      if (command === "ai_radio/sections/list") return sections;
+      return [];
+    });
+
+    const wrapper = mount(CustomizeHost, { props: { hostId: host.id } });
+    await flushPromises();
+
+    const sourceInputs = wrapper
+      .findAll("input")
+      .filter((input) => input.attributes("aria-label")?.includes("Jingle"));
+    expect(sourceInputs.map((input) => input.element.value)).toEqual([
+      "/media/ai_radio/ident.mp3",
+    ]);
+  });
+});

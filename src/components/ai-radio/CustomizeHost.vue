@@ -170,6 +170,85 @@
       </Card>
 
       <Card class="rounded-[6px]">
+        <CardHeader>
+          <CardTitle>{{ $t("providers.ai_radio.effects.title") }}</CardTitle>
+          <p class="text-sm text-muted-foreground">
+            {{ $t("providers.ai_radio.effects.help") }}
+          </p>
+        </CardHeader>
+        <CardContent class="grid gap-4 md:grid-cols-2">
+          <div
+            v-for="field in JINGLE_FIELDS"
+            :key="field"
+            class="flex flex-col gap-1.5"
+          >
+            <FieldLabel
+              :html-for="`customize-host-${field}`"
+              :label="$t(`providers.ai_radio.effects.${field}`)"
+              :description="$t(`providers.ai_radio.effects.${field}_help`)"
+            />
+            <Select
+              :model-value="jingleMode(field)"
+              @update:model-value="setJingleMode(field, String($event))"
+            >
+              <SelectTrigger :id="`customize-host-${field}`" class="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="off">
+                  {{ $t("providers.ai_radio.effects.off") }}
+                </SelectItem>
+                <SelectItem :value="BUILTIN_JINGLE">
+                  {{ $t("providers.ai_radio.effects.builtin") }}
+                </SelectItem>
+                <SelectItem value="custom">
+                  {{ $t("providers.ai_radio.effects.custom") }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              v-if="jingleMode(field) === 'custom'"
+              v-model="effects[field]"
+              class="h-8"
+              :placeholder="$t('providers.ai_radio.effects.source_placeholder')"
+              :aria-label="$t(`providers.ai_radio.effects.${field}`)"
+            />
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <FieldLabel
+              html-for="customize-host-music-bed"
+              :label="$t('providers.ai_radio.effects.musicBed')"
+              :description="$t('providers.ai_radio.effects.musicBed_help')"
+            />
+            <Input
+              id="customize-host-music-bed"
+              v-model="effects.musicBed"
+              class="h-8"
+              :placeholder="$t('providers.ai_radio.effects.source_placeholder')"
+            />
+          </div>
+
+          <div v-if="effects.musicBed.trim()" class="flex flex-col gap-1.5">
+            <FieldLabel
+              html-for="customize-host-music-bed-level"
+              :label="$t('providers.ai_radio.effects.musicBedLevel')"
+              :description="$t('providers.ai_radio.effects.musicBedLevel_help')"
+            />
+            <Input
+              id="customize-host-music-bed-level"
+              v-model.number="effects.musicBedLevel"
+              type="number"
+              class="h-8"
+              :min="MUSIC_BED_LEVEL_RANGE.min"
+              :max="MUSIC_BED_LEVEL_RANGE.max"
+              step="1"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card class="rounded-[6px]">
         <CardHeader class="flex-row items-center justify-between space-y-0">
           <CardTitle>
             {{ $t("providers.ai_radio.customize.segments_title") }}
@@ -256,23 +335,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { useHosts } from "@/composables/ai-radio/useHosts";
 import { useShows } from "@/composables/ai-radio/useShows";
 import {
+  BUILTIN_JINGLE,
   compileHost,
   deepClone,
   decompileHost,
+  defaultHostEffects,
   errorMessage,
   GENERIC_HOST_INSTRUCTIONS,
   GENERIC_HOST_SEGMENTS,
   GENERIC_SEGMENT_TEMPLATES,
+  MUSIC_BED_LEVEL_RANGE,
   NONE_SELECT_VALUE,
   optionValueToText,
   rowsToOptions,
   type HostDraft,
+  type HostEffects,
   type ShowSegment,
 } from "@/helpers/ai_radio";
 import { eventbus } from "@/plugins/eventbus";
 import { $t, canonicalizeLocale, getLocaleOptions, i18n } from "@/plugins/i18n";
 import { ArrowLeft, Plus, Trash2 } from "@lucide/vue";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { toast } from "vue-sonner";
 
@@ -337,6 +420,38 @@ const languageSelectValue = computed({
   },
 });
 
+const JINGLE_FIELDS = ["newsJingle", "showJingle"] as const;
+type JingleField = (typeof JINGLE_FIELDS)[number];
+type JingleMode = "off" | typeof BUILTIN_JINGLE | "custom";
+
+// the draft is null while loading, so the card edits a stand-in until the host is there
+const effects = computed<HostEffects>(() => {
+  if (!draft.value) return defaultHostEffects();
+  draft.value.effects ??= defaultHostEffects();
+  return draft.value.effects;
+});
+
+// "custom" with nothing typed yet would read as off, so the choice is remembered per field
+const customJingle = reactive<Record<JingleField, boolean>>({
+  newsJingle: false,
+  showJingle: false,
+});
+
+function jingleMode(field: JingleField): JingleMode {
+  const source = effects.value[field];
+  if (source === BUILTIN_JINGLE) return BUILTIN_JINGLE;
+  return source || customJingle[field] ? "custom" : "off";
+}
+
+function setJingleMode(field: JingleField, mode: string) {
+  customJingle[field] = mode === "custom";
+  if (mode === BUILTIN_JINGLE) {
+    effects.value[field] = BUILTIN_JINGLE;
+  } else if (mode === "off" || effects.value[field] === BUILTIN_JINGLE) {
+    effects.value[field] = "";
+  }
+}
+
 function updateSegment(index: number, segment: ShowSegment) {
   draft.value?.segments.splice(index, 1, segment);
 }
@@ -397,6 +512,7 @@ function newHostDraft(): HostDraft {
     language: "",
     options: {},
     segments: deepClone(GENERIC_HOST_SEGMENTS),
+    effects: defaultHostEffects(),
   };
 }
 

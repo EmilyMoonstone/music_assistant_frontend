@@ -2024,6 +2024,17 @@ export interface AIRadioHost {
   section_ids: string[];
   section_order: AIRadioSectionOrderRule[];
   merge_section_id: string;
+  // effects: missing on servers that do not support sound effects yet
+  effects?: AIRadioHostEffects;
+}
+
+/** Sounds a host dresses its breaks with: "" = off, "builtin" = the shipped gong, else a path or URL. */
+export interface AIRadioHostEffects {
+  news_jingle: string;
+  show_jingle: string;
+  music_bed: string;
+  // dB the bed sits below the voice
+  music_bed_level: number;
 }
 
 export interface AIRadioStation {
