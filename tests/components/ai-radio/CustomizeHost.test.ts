@@ -250,6 +250,8 @@ describe("CustomizeHost effects", () => {
       jingle_selection: "ai",
       music_bed: "/media/bed.mp3",
       music_bed_level: -18,
+      lead_in: "cut",
+      lead_in_seconds: 3,
     });
   });
 
@@ -285,6 +287,8 @@ describe("CustomizeHost effects", () => {
         jingleSelection: "ai",
         musicBed: "",
         musicBedLevel: -18,
+        leadIn: "talk_up",
+        leadInSeconds: 4,
       },
     };
     const { host, sections } = compileHost(draft);
@@ -305,6 +309,16 @@ describe("CustomizeHost effects", () => {
     ).toBe("/media/ai_radio/floskeln.mp3");
     expect(wrapper.find('button[aria-label="Remove tag indie"]').exists()).toBe(
       true,
+    );
+    const leadInSeconds = wrapper.find("#customize-host-lead-in-seconds");
+    expect((leadInSeconds.element as HTMLInputElement).value).toBe("4");
+  });
+
+  it("hides the transition length while the song cuts into the break", async () => {
+    const wrapper = await mountEditor();
+
+    expect(wrapper.find("#customize-host-lead-in-seconds").exists()).toBe(
+      false,
     );
   });
 });

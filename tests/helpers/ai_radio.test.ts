@@ -387,6 +387,8 @@ describe("host effects", () => {
       jingle_selection: "ai",
       music_bed: "",
       music_bed_level: DEFAULT_MUSIC_BED_LEVEL,
+      lead_in: "cut",
+      lead_in_seconds: 3,
     });
   });
 
@@ -407,6 +409,8 @@ describe("host effects", () => {
         jingleSelection: "random",
         musicBed: "https://example.test/bed.mp3",
         musicBedLevel: -24,
+        leadIn: "talk_up",
+        leadInSeconds: 4,
       },
     });
 
@@ -424,7 +428,11 @@ describe("host effects", () => {
       jingleSelection: "random",
       musicBed: "https://example.test/bed.mp3",
       musicBedLevel: -24,
+      leadIn: "talk_up",
+      leadInSeconds: 4,
     });
+    expect(host.effects?.lead_in).toBe("talk_up");
+    expect(host.effects?.lead_in_seconds).toBe(4);
   });
 
   it("reads a host from a server without effects as every sound off", () => {
