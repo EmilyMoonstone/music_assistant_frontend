@@ -27,9 +27,10 @@ afterEach(() => {
   sendCommand.mockImplementation(async () => []);
 });
 
-function mountLibrary(jingles: HostJingle[]) {
+function mountLibrary(jingles: HostJingle[], language?: string) {
   return mount(JingleLibrary, {
     props: {
+      language,
       modelValue: jingles,
       "onUpdate:modelValue": (value: HostJingle[]) => {
         jingles.splice(0, jingles.length, ...value);
@@ -73,8 +74,36 @@ describe("JingleLibrary", () => {
 
     expect(sendCommand).toHaveBeenCalledWith("ai_radio/jingles/inspect", {
       source: "/media/floskeln.mp3",
+      transcribe_speech: true,
     });
     expect(jingles[0].text).toBe("Keine Floskeln.");
+  });
+
+  it("listens in the host's language and says the words were heard", async () => {
+    const { toast } = await import("vue-sonner");
+    sendCommand.mockImplementation(async () => ({
+      duration: 6,
+      title: "",
+      text: "Das Radio für Musikentdecker",
+      text_source: "speech",
+    }));
+    const jingles: HostJingle[] = [
+      { source: "/media/id.mp3", tags: [], text: "" },
+    ];
+    const wrapper = mountLibrary(jingles, "de-DE");
+
+    await button(wrapper, "Read from file")?.trigger("click");
+    await flushPromises();
+
+    expect(sendCommand).toHaveBeenCalledWith("ai_radio/jingles/inspect", {
+      source: "/media/id.mp3",
+      transcribe_speech: true,
+      language: "de-DE",
+    });
+    expect(jingles[0].text).toBe("Das Radio für Musikentdecker");
+    expect(toast.info).toHaveBeenCalledWith(
+      expect.stringContaining("recognised by listening"),
+    );
   });
 
   it("keeps typed words when the file carries none", async () => {

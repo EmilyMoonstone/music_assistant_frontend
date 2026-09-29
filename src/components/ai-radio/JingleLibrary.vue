@@ -136,6 +136,8 @@ const PRESET_TAGS: readonly string[] = [
 ];
 
 const jingles = defineModel<HostJingle[]>({ required: true });
+// the language the host speaks, so a jingle is listened to in it
+const props = defineProps<{ language?: string }>();
 
 const { inspectJingle, previewJingle } = useHosts();
 const reading = ref<number | null>(null);
@@ -168,14 +170,23 @@ function addJingle() {
   jingles.value.push({ source: "", tags: [], text: "" });
 }
 
-/** Fills in the words the file says (from its lyrics tag), keeping any typed ones. */
+/**
+ * Fills in the words the file says, from its lyrics tag or else by listening to
+ * it, keeping any typed ones when neither finds words.
+ */
 async function readFromFile(index: number) {
   const jingle = jingles.value[index];
   reading.value = index;
   try {
-    const info = await inspectJingle(jingle.source.trim());
+    const info = await inspectJingle(jingle.source.trim(), {
+      transcribe: true,
+      language: props.language || undefined,
+    });
     if (info.text) {
       jingle.text = info.text;
+      if (info.text_source === "speech") {
+        toast.info($t("providers.ai_radio.effects.words_from_speech"));
+      }
     } else {
       toast.info($t("providers.ai_radio.effects.no_words_in_file"));
     }

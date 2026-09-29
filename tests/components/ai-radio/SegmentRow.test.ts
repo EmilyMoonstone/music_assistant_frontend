@@ -1,4 +1,5 @@
 import SegmentRow from "@/components/ai-radio/SegmentRow.vue";
+import { Select } from "@/components/ui/select";
 import type { ShowSegment } from "@/helpers/ai_radio";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -118,6 +119,20 @@ describe("SegmentRow placeholder chips", () => {
     );
     expect(toast.success).not.toHaveBeenCalled();
     expect(chip?.find(".lucide-check").exists()).toBe(false);
+  });
+
+  it("lets a segment ask for a closing jingle every time", async () => {
+    const wrapper = await mountExpanded();
+    // plays, web search, jingle before, jingle after
+    const after = wrapper.findAllComponents(Select)[3];
+
+    expect(wrapper.text()).toContain("Jingle after");
+    after.vm.$emit("update:modelValue", "always");
+    after.vm.$emit("update:modelValue", "sometimes");
+
+    expect(wrapper.emitted("update")).toEqual([
+      [{ ...segment, jingleAfter: "always" }],
+    ]);
   });
 });
 

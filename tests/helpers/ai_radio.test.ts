@@ -385,6 +385,7 @@ describe("host effects", () => {
       jingles: [],
       jingle_chance: 20,
       jingle_selection: "ai",
+      jingle_after_gap_minutes: 30,
       music_bed: "",
       music_bed_level: DEFAULT_MUSIC_BED_LEVEL,
       lead_in: "cut",
@@ -410,6 +411,7 @@ describe("host effects", () => {
         ],
         jingleChance: 35,
         jingleSelection: "random",
+        jingleAfterGapMinutes: 45,
         musicBed: "https://example.test/bed.mp3",
         musicBedLevel: -24,
         leadIn: "talk_up",
@@ -432,6 +434,7 @@ describe("host effects", () => {
       jingles: host.effects?.jingles,
       jingleChance: 35,
       jingleSelection: "random",
+      jingleAfterGapMinutes: 45,
       musicBed: "https://example.test/bed.mp3",
       musicBedLevel: -24,
       leadIn: "talk_up",
@@ -442,6 +445,20 @@ describe("host effects", () => {
     });
     expect(host.effects?.lead_in).toBe("talk_up");
     expect(host.effects?.lead_in_seconds).toBe(4);
+  });
+
+  it("keeps a segment's jingle modes, storing only the ones it sets", () => {
+    const [intro] = draft.segments;
+    const { host, sections } = compileHost({
+      ...draft,
+      segments: [{ ...intro, jingleBefore: "never", jingleAfter: "auto" }],
+    });
+
+    expect(sections[0].jingle_before).toBe("never");
+    expect(sections[0]).not.toHaveProperty("jingle_after");
+    const [segment] = decompileHost(host, sections).segments;
+    expect(segment.jingleBefore).toBe("never");
+    expect(segment.jingleAfter).toBeUndefined();
   });
 
   it("reads a host from a server without effects as every sound off", () => {

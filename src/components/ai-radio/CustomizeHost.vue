@@ -182,7 +182,10 @@
               :label="$t('providers.ai_radio.effects.jingles')"
               :description="$t('providers.ai_radio.effects.jingles_help')"
             />
-            <JingleLibrary v-model="effects.jingles" />
+            <JingleLibrary
+              v-model="effects.jingles"
+              :language="draft?.language"
+            />
           </div>
 
           <div class="flex flex-col gap-1.5">
@@ -226,6 +229,25 @@
                 </SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <FieldLabel
+              html-for="customize-host-jingle-after-gap"
+              :label="$t('providers.ai_radio.effects.jingleAfterGapMinutes')"
+              :description="
+                $t('providers.ai_radio.effects.jingleAfterGapMinutes_help')
+              "
+            />
+            <Input
+              id="customize-host-jingle-after-gap"
+              v-model.number="effects.jingleAfterGapMinutes"
+              type="number"
+              class="h-8"
+              :min="JINGLE_AFTER_GAP_RANGE.min"
+              :max="JINGLE_AFTER_GAP_RANGE.max"
+              step="5"
+            />
           </div>
 
           <div class="flex flex-col gap-1.5">
@@ -449,6 +471,7 @@ import {
   GENERIC_HOST_SEGMENTS,
   GENERIC_SEGMENT_TEMPLATES,
   LEAD_IN_SECONDS_RANGE,
+  JINGLE_AFTER_GAP_RANGE,
   MUSIC_BED_LEVEL_RANGE,
   NONE_SELECT_VALUE,
   optionValueToText,
