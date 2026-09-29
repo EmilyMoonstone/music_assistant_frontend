@@ -2062,6 +2062,8 @@ export interface AIRadioJingleInfo {
   duration: number | null;
   title: string;
   text: string;
+  // where the words came from: the file's lyrics tag, or listening to it
+  text_source?: "tags" | "speech" | "";
 }
 
 export interface AIRadioStation {

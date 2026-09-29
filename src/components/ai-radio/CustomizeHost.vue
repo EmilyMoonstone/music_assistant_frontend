@@ -182,7 +182,10 @@
               :label="$t('providers.ai_radio.effects.jingles')"
               :description="$t('providers.ai_radio.effects.jingles_help')"
             />
-            <JingleLibrary v-model="effects.jingles" />
+            <JingleLibrary
+              v-model="effects.jingles"
+              :language="draft?.language"
+            />
           </div>
 
           <div class="flex flex-col gap-1.5">

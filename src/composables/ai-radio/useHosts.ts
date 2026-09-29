@@ -141,10 +141,18 @@ async function previewJingle(source: string): Promise<void> {
   }
 }
 
-/** Reads a jingle file's length, title and the words from its lyrics tag. */
-async function inspectJingle(source: string): Promise<AIRadioJingleInfo> {
+/**
+ * Reads a jingle file's length, title and the words from its lyrics tag. With
+ * `transcribe`, a file without lyrics is listened to by a speech-to-text engine.
+ */
+async function inspectJingle(
+  source: string,
+  options: { transcribe?: boolean; language?: string } = {},
+): Promise<AIRadioJingleInfo> {
   return api.sendCommand<AIRadioJingleInfo>("ai_radio/jingles/inspect", {
     source,
+    ...(options.transcribe ? { transcribe_speech: true } : {}),
+    ...(options.language ? { language: options.language } : {}),
   });
 }
 
