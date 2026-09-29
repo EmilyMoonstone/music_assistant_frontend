@@ -248,6 +248,7 @@ describe("CustomizeHost effects", () => {
       ],
       jingle_chance: 35,
       jingle_selection: "ai",
+      jingle_after_gap_minutes: 30,
       music_bed: "/media/bed.mp3",
       music_bed_level: -18,
     });
@@ -283,6 +284,7 @@ describe("CustomizeHost effects", () => {
         ],
         jingleChance: 20,
         jingleSelection: "ai",
+        jingleAfterGapMinutes: 30,
         musicBed: "",
         musicBedLevel: -18,
       },

@@ -176,7 +176,11 @@
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem v-for="mode in JINGLE_MODES" :key="mode" :value="mode">
+              <SelectItem
+                v-for="mode in JINGLE_MODES"
+                :key="mode"
+                :value="mode"
+              >
                 {{ $t(`providers.ai_radio.effects.jingle_mode_${mode}`) }}
               </SelectItem>
             </SelectContent>
