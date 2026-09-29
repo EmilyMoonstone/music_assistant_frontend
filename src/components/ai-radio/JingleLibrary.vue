@@ -99,8 +99,8 @@
 
       <Textarea
         v-model="jingle.text"
-        rows="2"
-        class="text-sm"
+        rows="1"
+        class="min-h-8 py-1.5 text-sm"
         :placeholder="$t('providers.ai_radio.effects.jingle_text_placeholder')"
         :aria-label="$t('providers.ai_radio.effects.jingle_text')"
       />

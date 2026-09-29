@@ -178,11 +178,37 @@
         </CardHeader>
         <CardContent class="grid gap-4 md:grid-cols-2">
           <div class="flex flex-col gap-1.5 md:col-span-2">
-            <FieldLabel
-              :label="$t('providers.ai_radio.effects.jingles')"
-              :description="$t('providers.ai_radio.effects.jingles_help')"
-            />
+            <div class="flex items-center justify-between gap-2">
+              <FieldLabel
+                :label="
+                  $t('providers.ai_radio.effects.jingles_count', [
+                    effects.jingles.length,
+                  ])
+                "
+                :description="$t('providers.ai_radio.effects.jingles_help')"
+              />
+              <Button
+                id="customize-host-jingles-toggle"
+                variant="ghost-icon"
+                size="icon-sm"
+                :aria-label="
+                  jinglesOpen
+                    ? $t('providers.ai_radio.effects.jingles_hide')
+                    : $t('providers.ai_radio.effects.jingles_show')
+                "
+                :aria-expanded="jinglesOpen"
+                aria-controls="customize-host-jingles"
+                @click="jinglesExpanded = !jinglesOpen"
+              >
+                <ChevronDown
+                  class="h-4 w-4 transition-transform"
+                  :class="{ 'rotate-180': jinglesOpen }"
+                />
+              </Button>
+            </div>
             <JingleLibrary
+              v-if="jinglesOpen"
+              id="customize-host-jingles"
               v-model="effects.jingles"
               :language="draft?.language"
             />
@@ -390,7 +416,7 @@ import {
 } from "@/helpers/ai_radio";
 import { eventbus } from "@/plugins/eventbus";
 import { $t, canonicalizeLocale, getLocaleOptions, i18n } from "@/plugins/i18n";
-import { ArrowLeft, Plus, Trash2 } from "@lucide/vue";
+import { ArrowLeft, ChevronDown, Plus, Trash2 } from "@lucide/vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { toast } from "vue-sonner";
@@ -459,6 +485,21 @@ const languageSelectValue = computed({
 // every loaded draft carries its effects, the stand-in only covers the moment before it loads
 const effects = computed<HostEffects>(
   () => draft.value?.effects ?? defaultHostEffects(),
+);
+
+// a filled library starts folded away so the rest of the card stays in view; an empty
+// one starts open, where its add buttons are. Decided once per loaded host, so adding
+// the first jingle does not fold it away.
+const jinglesExpanded = ref<boolean | null>(null);
+const jinglesOpen = computed(() => jinglesExpanded.value ?? true);
+watch(
+  () => draft.value,
+  (loaded) => {
+    if (loaded && jinglesExpanded.value === null) {
+      jinglesExpanded.value = (loaded.effects?.jingles.length ?? 0) === 0;
+    }
+  },
+  { immediate: true },
 );
 
 function updateSegment(index: number, segment: ShowSegment) {
