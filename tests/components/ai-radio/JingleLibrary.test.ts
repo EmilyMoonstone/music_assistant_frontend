@@ -125,6 +125,44 @@ describe("JingleLibrary", () => {
     expect(toast.info).toHaveBeenCalled();
   });
 
+  it("adds the tags the AI hears and keeps typed words", async () => {
+    const { toast } = await import("vue-sonner");
+    sendCommand.mockImplementation(async () => ({
+      tags: ["news", "Indie Pop", "calm"],
+      text: "Neues aus dem Untergrund.",
+      style: "Ruhiger Indie-Pop.",
+    }));
+    const jingles: HostJingle[] = [
+      { source: "/media/news.mp3", tags: ["news"], text: "Getippt." },
+    ];
+    const wrapper = mountLibrary(jingles, "de-DE");
+
+    await button(wrapper, "Analyze style")?.trigger("click");
+    await flushPromises();
+
+    expect(sendCommand).toHaveBeenCalledWith("ai_radio/jingles/analyze", {
+      source: "/media/news.mp3",
+      language: "de-DE",
+    });
+    expect(jingles[0].tags).toEqual(["news", "indie_pop", "calm"]);
+    expect(jingles[0].text).toBe("Getippt.");
+    expect(toast.success).toHaveBeenCalledWith(
+      "Tags added: indie_pop, calm. Ruhiger Indie-Pop.",
+    );
+  });
+
+  it("only offers the analysis for files in the media folder", () => {
+    const wrapper = mountLibrary([
+      { source: "builtin", tags: [], text: "" },
+      { source: "https://example.test/j.mp3", tags: [], text: "" },
+    ]);
+
+    const analyze = wrapper
+      .findAll("button")
+      .filter((candidate) => candidate.text() === "Analyze style");
+    expect(analyze.map((b) => b.attributes("disabled"))).toEqual(["", ""]);
+  });
+
   it("adds, sets to the gong and removes jingles", async () => {
     const jingles: HostJingle[] = [];
     const wrapper = mountLibrary(jingles);

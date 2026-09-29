@@ -2066,6 +2066,13 @@ export interface AIRadioJingleFolder {
 }
 
 /** What ai_radio/jingles/inspect reads from a jingle file. */
+/** What the AI heard in a jingle: tags to file it under, its words and its style. */
+export interface AIRadioJingleAnalysis {
+  tags: string[];
+  text: string;
+  style: string;
+}
+
 export interface AIRadioJingleInfo {
   duration: number | null;
   title: string;

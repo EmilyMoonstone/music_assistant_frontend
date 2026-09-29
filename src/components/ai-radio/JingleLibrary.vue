@@ -41,6 +41,16 @@
             {{ $t("providers.ai_radio.effects.read_from_file") }}
           </Button>
           <Button
+            variant="outline"
+            size="sm"
+            :disabled="!canAnalyze(jingle) || analyzing === index"
+            :title="$t('providers.ai_radio.effects.analyze_style_help')"
+            @click="analyzeStyle(index)"
+          >
+            <Sparkles class="h-4 w-4" />
+            {{ $t("providers.ai_radio.effects.analyze_style") }}
+          </Button>
+          <Button
             variant="ghost-icon"
             size="icon-sm"
             class="text-destructive hover:text-destructive"
@@ -126,7 +136,15 @@ import {
   type HostJingle,
 } from "@/helpers/ai_radio";
 import { $t } from "@/plugins/i18n";
-import { FileAudio, FolderOpen, Play, Plus, Trash2, X } from "@lucide/vue";
+import {
+  FileAudio,
+  FolderOpen,
+  Play,
+  Plus,
+  Sparkles,
+  Trash2,
+  X,
+} from "@lucide/vue";
 import { ref } from "vue";
 import { toast } from "vue-sonner";
 
@@ -139,8 +157,9 @@ const jingles = defineModel<HostJingle[]>({ required: true });
 // the language the host speaks, so a jingle is listened to in it
 const props = defineProps<{ language?: string }>();
 
-const { inspectJingle, previewJingle } = useHosts();
+const { analyzeJingle, inspectJingle, previewJingle } = useHosts();
 const reading = ref<number | null>(null);
+const analyzing = ref<number | null>(null);
 const browserOpen = ref(false);
 
 function freeTags(jingle: HostJingle): string[] {
@@ -168,6 +187,45 @@ function addPicked(picked: HostJingle[]) {
 
 function addJingle() {
   jingles.value.push({ source: "", tags: [], text: "" });
+}
+
+/** Only a file in the media folder can be sent to the AI, not the gong or a URL. */
+function canAnalyze(jingle: HostJingle): boolean {
+  return jingle.source.trim().startsWith("/");
+}
+
+/**
+ * Lets the AI listen to the jingle: adds the tags it suggests to the ones set,
+ * fills in its words when none are typed, and says what it heard.
+ */
+async function analyzeStyle(index: number) {
+  const jingle = jingles.value[index];
+  analyzing.value = index;
+  try {
+    const analysis = await analyzeJingle(
+      jingle.source.trim(),
+      props.language || undefined,
+    );
+    const added = analysis.tags
+      .map(normalizeJingleTag)
+      .filter((tag) => tag && !jingle.tags.includes(tag));
+    jingle.tags.push(...added);
+    if (!jingle.text.trim() && analysis.text) jingle.text = analysis.text;
+    toast.success(
+      added.length
+        ? $t("providers.ai_radio.effects.analyze_style_done", [
+            added.join(", "),
+            analysis.style,
+          ])
+        : $t("providers.ai_radio.effects.analyze_style_nothing_new", [
+            analysis.style,
+          ]),
+    );
+  } catch (error) {
+    toast.error(errorMessage(error));
+  } finally {
+    analyzing.value = null;
+  }
 }
 
 /**
