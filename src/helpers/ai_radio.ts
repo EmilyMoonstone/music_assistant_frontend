@@ -4,6 +4,7 @@ import type {
   AIRadioHost,
   AIRadioHostEffects,
   AIRadioJingle,
+  AIRadioJingleMode,
   AIRadioOptionalGuards,
   AIRadioSection,
   AIRadioSectionOrderRule,
@@ -98,6 +99,9 @@ export interface ShowSegment {
   webSearch: AIRadioWebSearchMode;
   maxChars: number;
   plays: PlaysRule;
+  // whether the break opens and closes with a jingle; left out means "auto"
+  jingleBefore?: AIRadioJingleMode;
+  jingleAfter?: AIRadioJingleMode;
 }
 
 /**
@@ -308,6 +312,12 @@ const compileSegments = (
       web_search: segment.webSearch,
       prompt: segment.prompt,
       constraints: { max_chars: segment.maxChars },
+      ...(segment.jingleBefore && segment.jingleBefore !== "auto"
+        ? { jingle_before: segment.jingleBefore }
+        : {}),
+      ...(segment.jingleAfter && segment.jingleAfter !== "auto"
+        ? { jingle_after: segment.jingleAfter }
+        : {}),
     });
     return { ...segment, id };
   });
@@ -391,6 +401,8 @@ export interface HostEffects {
   // percent of plain transitions that open with a general jingle
   jingleChance: number;
   jingleSelection: JingleSelection;
+  // minutes between breaks the host closes with a jingle of its own accord
+  jingleAfterGapMinutes: number;
   musicBed: string;
   // dB the bed sits below the voice, within MUSIC_BED_LEVEL_RANGE
   musicBedLevel: number;
@@ -403,6 +415,9 @@ export type JingleSelection = "ai" | "random";
 export const BUILTIN_JINGLE = "builtin";
 export const DEFAULT_MUSIC_BED_LEVEL = -18;
 export const DEFAULT_JINGLE_CHANCE = 20;
+export const DEFAULT_JINGLE_AFTER_GAP_MINUTES = 30;
+// mirrors the range the server clamps to
+export const JINGLE_AFTER_GAP_RANGE = { min: 0, max: 240 } as const;
 // mirrors the range the server clamps to
 export const MUSIC_BED_LEVEL_RANGE = { min: -40, max: -6 } as const;
 // tags the server acts on: what a break is, and the time of day it airs at
@@ -424,6 +439,7 @@ export const defaultHostEffects = (): HostEffects => ({
   jingles: [],
   jingleChance: DEFAULT_JINGLE_CHANCE,
   jingleSelection: "ai",
+  jingleAfterGapMinutes: DEFAULT_JINGLE_AFTER_GAP_MINUTES,
   musicBed: "",
   musicBedLevel: DEFAULT_MUSIC_BED_LEVEL,
 });
@@ -478,6 +494,7 @@ const compileEffects = (effects: HostEffects): AIRadioHostEffects => ({
     .filter((jingle) => jingle.source),
   jingle_chance: effects.jingleChance,
   jingle_selection: effects.jingleSelection,
+  jingle_after_gap_minutes: effects.jingleAfterGapMinutes,
   music_bed: effects.musicBed.trim(),
   music_bed_level: effects.musicBedLevel,
 });
@@ -493,6 +510,8 @@ const decompileEffects = (effects?: AIRadioHostEffects): HostEffects =>
         jingleChance: effects.jingle_chance ?? DEFAULT_JINGLE_CHANCE,
         jingleSelection:
           effects.jingle_selection === "random" ? "random" : "ai",
+        jingleAfterGapMinutes:
+          effects.jingle_after_gap_minutes ?? DEFAULT_JINGLE_AFTER_GAP_MINUTES,
         musicBed: effects.music_bed || "",
         musicBedLevel: effects.music_bed_level ?? DEFAULT_MUSIC_BED_LEVEL,
       }
@@ -626,6 +645,8 @@ export const decompileHost = (
       webSearch: section.web_search || "disabled",
       maxChars: section.constraints?.max_chars || 0,
       plays,
+      ...(section.jingle_before ? { jingleBefore: section.jingle_before } : {}),
+      ...(section.jingle_after ? { jingleAfter: section.jingle_after } : {}),
     };
   };
 

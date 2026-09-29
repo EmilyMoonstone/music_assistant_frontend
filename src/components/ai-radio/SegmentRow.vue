@@ -156,6 +156,37 @@
         </div>
       </div>
 
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div
+          v-for="slot in JINGLE_SLOTS"
+          :key="slot.key"
+          class="flex flex-col gap-1.5"
+        >
+          <Label :for="`segment-${slot.key}-${segment.id}`">
+            {{ $t(`providers.ai_radio.effects.${slot.label}`) }}
+          </Label>
+          <Select
+            :model-value="segment[slot.key] ?? 'auto'"
+            @update:model-value="setJingleMode(slot.key, $event)"
+          >
+            <SelectTrigger
+              :id="`segment-${slot.key}-${segment.id}`"
+              class="w-full"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="mode in JINGLE_MODES" :key="mode" :value="mode">
+                {{ $t(`providers.ai_radio.effects.jingle_mode_${mode}`) }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <p class="text-xs text-muted-foreground">
+            {{ $t(`providers.ai_radio.effects.${slot.label}_help`) }}
+          </p>
+        </div>
+      </div>
+
       <div class="flex justify-end">
         <Button
           variant="outline"
@@ -197,7 +228,10 @@ import {
   type ShowSegment,
 } from "@/helpers/ai_radio";
 import { copyToClipboard } from "@/helpers/utils";
-import type { AIRadioWebSearchMode } from "@/plugins/api/interfaces";
+import type {
+  AIRadioJingleMode,
+  AIRadioWebSearchMode,
+} from "@/plugins/api/interfaces";
 import { $t } from "@/plugins/i18n";
 import { Check, ChevronDown, ChevronUp, Copy, Trash2 } from "@lucide/vue";
 import { computed, onUnmounted, ref } from "vue";
@@ -229,6 +263,20 @@ const emit = defineEmits<{
 }>();
 
 const expanded = ref(false);
+
+const JINGLE_MODES: AIRadioJingleMode[] = ["auto", "always", "never"];
+const JINGLE_SLOTS = [
+  { key: "jingleBefore", label: "jingle_before" },
+  { key: "jingleAfter", label: "jingle_after" },
+] as const;
+
+function setJingleMode(
+  key: (typeof JINGLE_SLOTS)[number]["key"],
+  value: unknown,
+) {
+  if (!JINGLE_MODES.includes(value as AIRadioJingleMode)) return;
+  emit("update", { ...props.segment, [key]: value as AIRadioJingleMode });
+}
 
 const COPIED_FEEDBACK_MS = 1500;
 const copiedToken = ref<string | null>(null);

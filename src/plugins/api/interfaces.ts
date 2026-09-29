@@ -1965,7 +1965,13 @@ export interface AIRadioSection {
   web_search?: AIRadioWebSearchMode;
   constraints?: AIRadioSectionConstraints;
   cover_image?: string;
+  // whether the break opens and closes with a jingle, "auto" when left out
+  jingle_before?: AIRadioJingleMode;
+  jingle_after?: AIRadioJingleMode;
 }
+
+/** "auto" leaves a jingle to the host (and, after a break, to the AI). */
+export type AIRadioJingleMode = "auto" | "always" | "never";
 
 export interface AIRadioOptionalGuards {
   min_gap_songs?: number;
@@ -2034,6 +2040,8 @@ export interface AIRadioHostEffects {
   // percent of plain transitions that open with a general jingle
   jingle_chance: number;
   jingle_selection: "ai" | "random";
+  // a break closes with a jingle of its own accord at most this often
+  jingle_after_gap_minutes?: number;
   music_bed: string;
   // dB the bed sits below the voice
   music_bed_level: number;
