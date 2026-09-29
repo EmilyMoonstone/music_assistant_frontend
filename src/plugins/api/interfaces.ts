@@ -2037,7 +2037,13 @@ export interface AIRadioHostEffects {
   music_bed: string;
   // dB the bed sits below the voice
   music_bed_level: number;
+  // how the song before blends into a break, and the overlap in seconds
+  lead_in?: AIRadioLeadIn;
+  lead_in_seconds?: number;
 }
+
+/** "talk_up" starts the break at full level over the song's fading outro. */
+export type AIRadioLeadIn = "cut" | "crossfade" | "talk_up";
 
 /** One jingle of a host's library: "builtin" = the shipped gong, else a path or URL. */
 export interface AIRadioJingle {

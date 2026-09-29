@@ -258,6 +258,46 @@
               step="1"
             />
           </div>
+
+          <div class="flex flex-col gap-1.5">
+            <FieldLabel
+              html-for="customize-host-lead-in"
+              :label="$t('providers.ai_radio.effects.leadIn')"
+              :description="$t('providers.ai_radio.effects.leadIn_help')"
+            />
+            <Select v-model="effects.leadIn">
+              <SelectTrigger id="customize-host-lead-in" class="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cut">
+                  {{ $t("providers.ai_radio.effects.leadIn_cut") }}
+                </SelectItem>
+                <SelectItem value="crossfade">
+                  {{ $t("providers.ai_radio.effects.leadIn_crossfade") }}
+                </SelectItem>
+                <SelectItem value="talk_up">
+                  {{ $t("providers.ai_radio.effects.leadIn_talk_up") }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div v-if="effects.leadIn !== 'cut'" class="flex flex-col gap-1.5">
+            <FieldLabel
+              html-for="customize-host-lead-in-seconds"
+              :label="$t('providers.ai_radio.effects.leadInSeconds')"
+            />
+            <Input
+              id="customize-host-lead-in-seconds"
+              v-model.number="effects.leadInSeconds"
+              type="number"
+              class="h-8"
+              :min="LEAD_IN_SECONDS_RANGE.min"
+              :max="LEAD_IN_SECONDS_RANGE.max"
+              step="0.5"
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -357,6 +397,7 @@ import {
   GENERIC_HOST_INSTRUCTIONS,
   GENERIC_HOST_SEGMENTS,
   GENERIC_SEGMENT_TEMPLATES,
+  LEAD_IN_SECONDS_RANGE,
   MUSIC_BED_LEVEL_RANGE,
   NONE_SELECT_VALUE,
   optionValueToText,

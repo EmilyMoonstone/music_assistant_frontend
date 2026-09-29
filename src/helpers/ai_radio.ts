@@ -4,6 +4,7 @@ import type {
   AIRadioHost,
   AIRadioHostEffects,
   AIRadioJingle,
+  AIRadioLeadIn,
   AIRadioOptionalGuards,
   AIRadioSection,
   AIRadioSectionOrderRule,
@@ -394,6 +395,9 @@ export interface HostEffects {
   musicBed: string;
   // dB the bed sits below the voice, within MUSIC_BED_LEVEL_RANGE
   musicBedLevel: number;
+  leadIn: AIRadioLeadIn;
+  // overlap of the song and the break, within LEAD_IN_SECONDS_RANGE
+  leadInSeconds: number;
 }
 
 /** One jingle of a host's library: BUILTIN_JINGLE = the shipped gong, else a path or URL. */
@@ -403,6 +407,9 @@ export type JingleSelection = "ai" | "random";
 export const BUILTIN_JINGLE = "builtin";
 export const DEFAULT_MUSIC_BED_LEVEL = -18;
 export const DEFAULT_JINGLE_CHANCE = 20;
+export const DEFAULT_LEAD_IN_SECONDS = 3;
+// mirrors the range the server clamps to
+export const LEAD_IN_SECONDS_RANGE = { min: 1, max: 8 } as const;
 // mirrors the range the server clamps to
 export const MUSIC_BED_LEVEL_RANGE = { min: -40, max: -6 } as const;
 // tags the server acts on: what a break is, and the time of day it airs at
@@ -426,6 +433,8 @@ export const defaultHostEffects = (): HostEffects => ({
   jingleSelection: "ai",
   musicBed: "",
   musicBedLevel: DEFAULT_MUSIC_BED_LEVEL,
+  leadIn: "cut",
+  leadInSeconds: DEFAULT_LEAD_IN_SECONDS,
 });
 
 /** Normalizes a free tag the way the server stores it: lowercase, words joined by "_". */
@@ -480,6 +489,8 @@ const compileEffects = (effects: HostEffects): AIRadioHostEffects => ({
   jingle_selection: effects.jingleSelection,
   music_bed: effects.musicBed.trim(),
   music_bed_level: effects.musicBedLevel,
+  lead_in: effects.leadIn,
+  lead_in_seconds: effects.leadInSeconds,
 });
 
 const decompileEffects = (effects?: AIRadioHostEffects): HostEffects =>
@@ -495,6 +506,8 @@ const decompileEffects = (effects?: AIRadioHostEffects): HostEffects =>
           effects.jingle_selection === "random" ? "random" : "ai",
         musicBed: effects.music_bed || "",
         musicBedLevel: effects.music_bed_level ?? DEFAULT_MUSIC_BED_LEVEL,
+        leadIn: effects.lead_in ?? "cut",
+        leadInSeconds: effects.lead_in_seconds ?? DEFAULT_LEAD_IN_SECONDS,
       }
     : defaultHostEffects();
 
