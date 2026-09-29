@@ -252,6 +252,9 @@ describe("CustomizeHost effects", () => {
       music_bed_level: -18,
       lead_in: "cut",
       lead_in_seconds: 3,
+      post_gap_seconds: 0.4,
+      post_max_seconds: 0,
+      post_duck_percent: 60,
     });
   });
 
@@ -289,6 +292,9 @@ describe("CustomizeHost effects", () => {
         musicBedLevel: -18,
         leadIn: "talk_up",
         leadInSeconds: 4,
+        postGapSeconds: 1.5,
+        postMaxSeconds: 0,
+        postDuckPercent: 60,
       },
     };
     const { host, sections } = compileHost(draft);
@@ -312,6 +318,8 @@ describe("CustomizeHost effects", () => {
     );
     const leadInSeconds = wrapper.find("#customize-host-lead-in-seconds");
     expect((leadInSeconds.element as HTMLInputElement).value).toBe("4");
+    const postGap = wrapper.find("#customize-host-post-gap");
+    expect((postGap.element as HTMLInputElement).value).toBe("1.5");
   });
 
   it("hides the transition length while the song cuts into the break", async () => {

@@ -2042,6 +2042,10 @@ export interface AIRadioHostEffects {
   // how the song before blends into a break, and the overlap in seconds
   lead_in?: AIRadioLeadIn;
   lead_in_seconds?: number;
+  // how a break that allows a post carries over the next song's intro
+  post_gap_seconds?: number;
+  post_max_seconds?: number;
+  post_duck_percent?: number;
 }
 
 /** "talk_up" starts the break at full level over the song's fading outro. */

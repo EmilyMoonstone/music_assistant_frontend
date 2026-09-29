@@ -424,6 +424,12 @@ export interface HostEffects {
   leadIn: AIRadioLeadIn;
   // overlap of the song and the break, within LEAD_IN_SECONDS_RANGE
   leadInSeconds: number;
+  // seconds of music between the end of the voice and the vocal of the next song
+  postGapSeconds: number;
+  // longest stretch the voice runs over the intro, 0 for no cap
+  postMaxSeconds: number;
+  // how far the song drops under the voice, in percent
+  postDuckPercent: number;
 }
 
 /** One jingle of a host's library: BUILTIN_JINGLE = the shipped gong, else a path or URL. */
@@ -461,6 +467,9 @@ export const defaultHostEffects = (): HostEffects => ({
   musicBedLevel: DEFAULT_MUSIC_BED_LEVEL,
   leadIn: "cut",
   leadInSeconds: DEFAULT_LEAD_IN_SECONDS,
+  postGapSeconds: 0.4,
+  postMaxSeconds: 0,
+  postDuckPercent: 60,
 });
 
 /** Normalizes a free tag the way the server stores it: lowercase, words joined by "_". */
@@ -517,6 +526,9 @@ const compileEffects = (effects: HostEffects): AIRadioHostEffects => ({
   music_bed_level: effects.musicBedLevel,
   lead_in: effects.leadIn,
   lead_in_seconds: effects.leadInSeconds,
+  post_gap_seconds: effects.postGapSeconds,
+  post_max_seconds: effects.postMaxSeconds,
+  post_duck_percent: effects.postDuckPercent,
 });
 
 const decompileEffects = (effects?: AIRadioHostEffects): HostEffects =>
@@ -534,6 +546,9 @@ const decompileEffects = (effects?: AIRadioHostEffects): HostEffects =>
         musicBedLevel: effects.music_bed_level ?? DEFAULT_MUSIC_BED_LEVEL,
         leadIn: effects.lead_in ?? "cut",
         leadInSeconds: effects.lead_in_seconds ?? DEFAULT_LEAD_IN_SECONDS,
+        postGapSeconds: effects.post_gap_seconds ?? 0.4,
+        postMaxSeconds: effects.post_max_seconds ?? 0,
+        postDuckPercent: effects.post_duck_percent ?? 60,
       }
     : defaultHostEffects();
 

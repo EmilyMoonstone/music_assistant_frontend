@@ -298,6 +298,57 @@
               step="0.5"
             />
           </div>
+
+          <div class="flex flex-col gap-1.5 md:col-span-2">
+            <FieldLabel
+              :label="$t('providers.ai_radio.effects.post')"
+              :description="$t('providers.ai_radio.effects.post_help')"
+            />
+            <div class="grid gap-3 sm:grid-cols-3">
+              <div class="flex flex-col gap-1">
+                <Label for="customize-host-post-gap" class="text-xs">
+                  {{ $t("providers.ai_radio.effects.postGapSeconds") }}
+                </Label>
+                <Input
+                  id="customize-host-post-gap"
+                  v-model.number="effects.postGapSeconds"
+                  type="number"
+                  class="h-8"
+                  min="0"
+                  max="3"
+                  step="0.1"
+                />
+              </div>
+              <div class="flex flex-col gap-1">
+                <Label for="customize-host-post-max" class="text-xs">
+                  {{ $t("providers.ai_radio.effects.postMaxSeconds") }}
+                </Label>
+                <Input
+                  id="customize-host-post-max"
+                  v-model.number="effects.postMaxSeconds"
+                  type="number"
+                  class="h-8"
+                  min="0"
+                  max="30"
+                  step="0.5"
+                />
+              </div>
+              <div class="flex flex-col gap-1">
+                <Label for="customize-host-post-duck" class="text-xs">
+                  {{ $t("providers.ai_radio.effects.postDuckPercent") }}
+                </Label>
+                <Input
+                  id="customize-host-post-duck"
+                  v-model.number="effects.postDuckPercent"
+                  type="number"
+                  class="h-8"
+                  min="0"
+                  max="90"
+                  step="5"
+                />
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

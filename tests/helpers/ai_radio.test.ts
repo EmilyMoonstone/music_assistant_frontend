@@ -389,6 +389,9 @@ describe("host effects", () => {
       music_bed_level: DEFAULT_MUSIC_BED_LEVEL,
       lead_in: "cut",
       lead_in_seconds: 3,
+      post_gap_seconds: 0.4,
+      post_max_seconds: 0,
+      post_duck_percent: 60,
     });
   });
 
@@ -411,6 +414,9 @@ describe("host effects", () => {
         musicBedLevel: -24,
         leadIn: "talk_up",
         leadInSeconds: 4,
+        postGapSeconds: 1.5,
+        postMaxSeconds: 6,
+        postDuckPercent: 40,
       },
     });
 
@@ -430,6 +436,9 @@ describe("host effects", () => {
       musicBedLevel: -24,
       leadIn: "talk_up",
       leadInSeconds: 4,
+      postGapSeconds: 1.5,
+      postMaxSeconds: 6,
+      postDuckPercent: 40,
     });
     expect(host.effects?.lead_in).toBe("talk_up");
     expect(host.effects?.lead_in_seconds).toBe(4);
