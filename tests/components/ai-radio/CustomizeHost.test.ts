@@ -216,6 +216,23 @@ describe("CustomizeHost effects", () => {
       ([command]) => command === "ai_radio/hosts/save",
     )?.[1]?.host as AIRadioHost | undefined;
 
+  it("keeps an empty library open while its first jingle is added", async () => {
+    const wrapper = await mountEditor();
+    const toggle = wrapper.get("#customize-host-jingles-toggle");
+    expect(toggle.attributes("aria-expanded")).toBe("true");
+
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Add jingle")
+      ?.trigger("click");
+    expect(toggle.attributes("aria-expanded")).toBe("true");
+
+    await toggle.trigger("click");
+    expect(
+      wrapper.find('input[aria-label="Jingle file or URL"]').exists(),
+    ).toBe(false);
+  });
+
   it("saves a jingle with its tags and words, the chance and the bed", async () => {
     const wrapper = await mountEditor();
     await wrapper.find("#customize-host-name").setValue("Mika");
@@ -308,6 +325,15 @@ describe("CustomizeHost effects", () => {
 
     const wrapper = mount(CustomizeHost, { props: { hostId: host.id } });
     await flushPromises();
+
+    // a filled library opens folded away, with its size in the title
+    const toggle = wrapper.get("#customize-host-jingles-toggle");
+    expect(toggle.attributes("aria-expanded")).toBe("false");
+    expect(wrapper.text()).toContain("Jingles (1)");
+    expect(
+      wrapper.find('input[aria-label="Jingle file or URL"]').exists(),
+    ).toBe(false);
+    await toggle.trigger("click");
 
     expect(
       (
