@@ -5,6 +5,7 @@ import api from "@/plugins/api";
 import type {
   AIRadioHost,
   AIRadioJingleFolder,
+  AIRadioJingleAnalysis,
   AIRadioJingleInfo,
   AIRadioSection,
 } from "@/plugins/api/interfaces";
@@ -125,6 +126,17 @@ async function browseJingles(path?: string): Promise<AIRadioJingleFolder> {
  * Plays a jingle on the active player as an announcement, so it can be heard before it
  * is tagged. Tells the user when no player is active instead of failing silently.
  */
+/** Lets the AI listen to a jingle file and suggest its tags, words and style. */
+async function analyzeJingle(
+  source: string,
+  language?: string,
+): Promise<AIRadioJingleAnalysis> {
+  return api.sendCommand<AIRadioJingleAnalysis>("ai_radio/jingles/analyze", {
+    source,
+    ...(language ? { language } : {}),
+  });
+}
+
 async function previewJingle(source: string): Promise<void> {
   const playerId = store.activePlayerId;
   if (!playerId) {
@@ -250,6 +262,7 @@ export function useHosts() {
     loadQueueDjStatus,
     inspectJingle,
     previewJingle,
+    analyzeJingle,
     browseJingles,
   };
 }
