@@ -461,6 +461,20 @@ describe("host effects", () => {
     expect(segment.jingleAfter).toBeUndefined();
   });
 
+  it("keeps a segment that plays its jingles only when it cannot post", () => {
+    const [intro] = draft.segments;
+    const { host, sections } = compileHost({
+      ...draft,
+      segments: [{ ...intro, jingleBefore: "no_post", jingleAfter: "no_post" }],
+    });
+
+    expect(sections[0].jingle_before).toBe("no_post");
+    expect(sections[0].jingle_after).toBe("no_post");
+    const [segment] = decompileHost(host, sections).segments;
+    expect(segment.jingleBefore).toBe("no_post");
+    expect(segment.jingleAfter).toBe("no_post");
+  });
+
   it("reads a host from a server without effects as every sound off", () => {
     const { host, sections } = compileHost(draft);
     delete host.effects;
