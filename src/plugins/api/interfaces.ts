@@ -1971,7 +1971,7 @@ export interface AIRadioSection {
 }
 
 /** "auto" leaves a jingle to the host (and, after a break, to the AI). */
-export type AIRadioJingleMode = "auto" | "always" | "never";
+export type AIRadioJingleMode = "auto" | "always" | "never" | "no_post";
 
 export interface AIRadioOptionalGuards {
   min_gap_songs?: number;

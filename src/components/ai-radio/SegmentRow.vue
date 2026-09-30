@@ -268,7 +268,12 @@ const emit = defineEmits<{
 
 const expanded = ref(false);
 
-const JINGLE_MODES: AIRadioJingleMode[] = ["auto", "always", "never"];
+const JINGLE_MODES: AIRadioJingleMode[] = [
+  "auto",
+  "always",
+  "no_post",
+  "never",
+];
 const JINGLE_SLOTS = [
   { key: "jingleBefore", label: "jingle_before" },
   { key: "jingleAfter", label: "jingle_after" },
