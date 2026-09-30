@@ -100,6 +100,8 @@ export interface ShowSegment {
   prompt: string;
   webSearch: AIRadioWebSearchMode;
   allowPost: boolean;
+  // whether the break may start over the outro of the song before it; left out means off
+  allowTalkOver?: boolean;
   maxChars: number;
   plays: PlaysRule;
   // whether the break opens and closes with a jingle; left out means "auto"
@@ -332,6 +334,7 @@ const compileSegments = (
       type: "ai_text",
       web_search: segment.webSearch,
       allow_post: segment.allowPost,
+      ...(segment.allowTalkOver ? { allow_talk_over: true } : {}),
       prompt: segment.prompt,
       constraints: { max_chars: segment.maxChars },
       ...(segment.jingleBefore && segment.jingleBefore !== "auto"
@@ -704,6 +707,7 @@ export const decompileHost = (
       prompt: section.prompt,
       webSearch: section.web_search || "disabled",
       allowPost: section.allow_post ?? false,
+      ...(section.allow_talk_over ? { allowTalkOver: true } : {}),
       maxChars: section.constraints?.max_chars || 0,
       plays,
       ...(section.jingle_before ? { jingleBefore: section.jingle_before } : {}),

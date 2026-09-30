@@ -1967,6 +1967,8 @@ export interface AIRadioSection {
   cover_image?: string;
   /** Whether this segment may carry over the next track's intro. */
   allow_post?: boolean;
+  /** Whether this segment may start over the outro of the track before it. */
+  allow_talk_over?: boolean;
   // whether the break opens and closes with a jingle, "auto" when left out
   jingle_before?: AIRadioJingleMode;
   jingle_after?: AIRadioJingleMode;

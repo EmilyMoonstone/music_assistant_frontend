@@ -165,6 +165,17 @@
         <Switch :id="`allow-post-${segment.id}`" v-model="allowPost" />
       </div>
 
+      <div v-if="api.supportsAIRadioAllowPost" class="flex items-center gap-3">
+        <FieldLabel
+          :html-for="`allow-talk-over-${segment.id}`"
+          :label="$t('providers.ai_radio.fields.allow_talk_over')"
+          :description="
+            $t('providers.ai_radio.field_descriptions.allow_talk_over')
+          "
+        />
+        <Switch :id="`allow-talk-over-${segment.id}`" v-model="allowTalkOver" />
+      </div>
+
       <div class="grid gap-3 sm:grid-cols-2">
         <div
           v-for="slot in JINGLE_SLOTS"
@@ -395,6 +406,12 @@ const allowPost = computed({
   get: () => props.segment.allowPost,
   set: (value: boolean) =>
     emit("update", { ...props.segment, allowPost: value }),
+});
+
+const allowTalkOver = computed({
+  get: () => props.segment.allowTalkOver ?? false,
+  set: (value: boolean) =>
+    emit("update", { ...props.segment, allowTalkOver: value }),
 });
 
 const playsKind = computed({

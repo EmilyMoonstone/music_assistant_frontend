@@ -518,6 +518,34 @@ describe("allowPost", () => {
   });
 });
 
+describe("allowTalkOver", () => {
+  const makeHostDraft = (allowTalkOver: boolean): HostDraft => ({
+    id: "rick",
+    name: "Rick",
+    instructions: "Persona.",
+    ttsEngine: "",
+    language: "",
+    options: {},
+    segments: [{ ...artistFactTemplate, allowTalkOver }],
+  });
+
+  it("stores the switch only when it is on", () => {
+    const on = compileHost(makeHostDraft(true)).sections[0];
+    const off = compileHost(makeHostDraft(false)).sections[0];
+    expect(on.allow_talk_over).toBe(true);
+    expect(off).not.toHaveProperty("allow_talk_over");
+  });
+
+  it("keeps the switch on across a save and reload", () => {
+    const { host, sections } = compileHost(makeHostDraft(true));
+    const round = decompileHost(host, sections);
+    expect(round.segments[0].allowTalkOver).toBe(true);
+    const off = compileHost(makeHostDraft(false));
+    const roundOff = decompileHost(off.host, off.sections);
+    expect(roundOff.segments[0].allowTalkOver).toBeUndefined();
+  });
+});
+
 describe("show running order", () => {
   const basics = {
     name: "Musikentdecker",
