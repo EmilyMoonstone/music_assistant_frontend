@@ -1,12 +1,17 @@
 <template>
   <div
     class="show-card"
-    :class="{ 'show-card--editable ma-tap': canEdit }"
-    :role="canEdit ? 'button' : undefined"
-    :tabindex="canEdit ? 0 : undefined"
-    @click="customize"
-    @keydown.enter.self="customize"
-    @keydown.space.self.prevent="customize"
+    :class="{ 'show-card--playable ma-tap': !runningSession }"
+    role="button"
+    tabindex="0"
+    :aria-label="
+      runningSession
+        ? show.name
+        : $t('providers.ai_radio.card.play_show', [show.name])
+    "
+    @click="onCardClick"
+    @keydown.enter.self="onCardClick"
+    @keydown.space.self.prevent="onCardClick"
   >
     <div class="show-card__art">
       <MediaItemThumb
@@ -67,7 +72,7 @@
         </span>
       </span>
 
-      <DropdownMenu v-if="canEdit">
+      <DropdownMenu>
         <DropdownMenuTrigger as-child>
           <Button
             variant="ghost-icon"
@@ -80,20 +85,29 @@
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem @click="emit('customize', show.id)">
+          <DropdownMenuItem v-if="canEdit" @click="emit('customize', show.id)">
+            <Pencil class="h-4 w-4" />
             {{ $t("providers.ai_radio.card.customize") }}
           </DropdownMenuItem>
-          <DropdownMenuItem :disabled="isDuplicating" @click="onDuplicate">
-            {{ $t("providers.ai_radio.card.duplicate") }}
+          <DropdownMenuItem @click="logOpen = true">
+            <ScrollText class="h-4 w-4" />
+            {{ $t("providers.ai_radio.card.log") }}
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            variant="destructive"
-            :disabled="isDeleting"
-            @click="onDelete"
-          >
-            {{ $t("providers.ai_radio.card.delete") }}
-          </DropdownMenuItem>
+          <template v-if="canEdit">
+            <DropdownMenuItem :disabled="isDuplicating" @click="onDuplicate">
+              <Copy class="h-4 w-4" />
+              {{ $t("providers.ai_radio.card.duplicate") }}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              :disabled="isDeleting"
+              @click="onDelete"
+            >
+              <Trash2 class="h-4 w-4" />
+              {{ $t("providers.ai_radio.card.delete") }}
+            </DropdownMenuItem>
+          </template>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
@@ -145,10 +159,17 @@
       :show-name="show.name"
       @start="onWish"
     />
+    <BreakLogDialog
+      v-if="logOpen"
+      v-model:open="logOpen"
+      :station-id="show.id"
+      :show-name="show.name"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import BreakLogDialog from "@/components/ai-radio/BreakLogDialog.vue";
 import ShowWishDialog from "@/components/ai-radio/ShowWishDialog.vue";
 import {
   bannerBackground,
@@ -189,10 +210,14 @@ import { eventbus } from "@/plugins/eventbus";
 import { $t } from "@/plugins/i18n";
 import { store } from "@/plugins/store";
 import {
+  Copy,
   History,
   MoreVertical,
+  Pencil,
   Play,
+  ScrollText,
   Square,
+  Trash2,
   TriangleAlert,
 } from "@lucide/vue";
 import { computed, ref } from "vue";
@@ -267,8 +292,12 @@ const lastEndedSession = computed(() => {
   return endedLive ? session : undefined;
 });
 
-function customize() {
-  if (canEdit.value) emit("customize", props.show.id);
+const logOpen = ref(false);
+
+/** A click on the card plays the show; editing it is in the card's menu. */
+function onCardClick() {
+  if (runningSession.value || isStarting.value) return;
+  void onPlay();
 }
 
 function sessionRelativeTime(session: AIRadioSession): string {
@@ -426,7 +455,7 @@ function onDelete() {
   color: rgb(var(--v-theme-on-background));
   transition: background 0.15s ease;
 }
-.show-card--editable {
+.show-card--playable {
   cursor: pointer;
 }
 .show-card:hover {

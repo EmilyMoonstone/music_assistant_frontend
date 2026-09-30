@@ -7,6 +7,7 @@ import type {
   AIRadioJingleFolder,
   AIRadioJingleAnalysis,
   AIRadioJingleInfo,
+  AIRadioProbeResult,
   AIRadioSection,
 } from "@/plugins/api/interfaces";
 import { authManager } from "@/plugins/auth";
@@ -137,6 +138,26 @@ async function analyzeJingle(
   });
 }
 
+/**
+ * Rehearses one segment of a host, saved or not, on the active player and returns what
+ * was said. Resolves to null when no player is selected.
+ */
+async function probeSegment(
+  host: AIRadioHost,
+  section: AIRadioSection,
+): Promise<AIRadioProbeResult | null> {
+  const playerId = store.activePlayerId;
+  if (!playerId) {
+    toast.error($t("providers.ai_radio.probe.no_player"));
+    return null;
+  }
+  return api.sendCommand<AIRadioProbeResult>("ai_radio/hosts/probe", {
+    host,
+    section,
+    player_id: playerId,
+  });
+}
+
 async function previewJingle(source: string): Promise<void> {
   const playerId = store.activePlayerId;
   if (!playerId) {
@@ -262,6 +283,7 @@ export function useHosts() {
     loadQueueDjStatus,
     inspectJingle,
     previewJingle,
+    probeSegment,
     analyzeJingle,
     browseJingles,
   };

@@ -99,27 +99,46 @@ describe("ShowCard editing rights", () => {
       global: { renderStubDefaultSlot: true },
     });
 
-  it("lets an admin customize, duplicate and delete the show", async () => {
+  it("lets an admin customize, look back on, duplicate and delete the show", async () => {
     hasScope.mockImplementation(scopeChecker(BUILTIN_ROLE_SCOPES.admin));
     const wrapper = mountCard();
 
-    expect(wrapper.findAllComponents(DropdownMenuItem)).toHaveLength(3);
+    const items = wrapper.findAllComponents(DropdownMenuItem);
+    expect(items).toHaveLength(4);
+    await items[0].trigger("click");
+    expect(wrapper.emitted("customize")).toEqual([[show.id]]);
+  });
+
+  it("plays the show when the card is clicked, for anyone", async () => {
+    hasScope.mockImplementation(scopeChecker(BUILTIN_ROLE_SCOPES.admin));
+    const api = (await import("@/plugins/api")).default;
+    const wrapper = mount(ShowCard, {
+      props: { show: { ...show, default_player_id: "kitchen" } },
+      shallow: true,
+    });
+
     expect(wrapper.attributes("role")).toBe("button");
     await wrapper.trigger("click");
-    expect(wrapper.emitted("customize")).toEqual([[show.id]]);
+    await flushPromises();
+
+    expect(wrapper.emitted("customize")).toBeUndefined();
+    expect(
+      vi
+        .mocked(api.sendCommand)
+        .mock.calls.some(([command]) => command === "ai_radio/start"),
+    ).toBe(true);
+    vi.mocked(api.sendCommand).mockClear();
   });
 
   it.each([
     ["a member", BUILTIN_ROLE_SCOPES.user],
     ["a guest", BUILTIN_ROLE_SCOPES.guest],
-  ])("leaves %s only the play button", async (_role, scopes) => {
+  ])("leaves %s the play button and the log", async (_role, scopes) => {
     hasScope.mockImplementation(scopeChecker(scopes));
     const wrapper = mountCard();
 
-    expect(wrapper.findComponent(DropdownMenu).exists()).toBe(false);
-    expect(wrapper.attributes("role")).toBeUndefined();
-    await wrapper.trigger("click");
-    expect(wrapper.emitted("customize")).toBeUndefined();
+    expect(wrapper.findAllComponents(DropdownMenuItem)).toHaveLength(1);
+    expect(wrapper.text()).toContain("Break log");
     expect(wrapper.find('[aria-label="Play"]').exists()).toBe(true);
   });
 });

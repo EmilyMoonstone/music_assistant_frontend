@@ -1,6 +1,7 @@
 import { canUseQueueDj } from "@/helpers/ai_radio_access";
 import api from "@/plugins/api";
 import type {
+  AIRadioBreakLogEntry,
   AIRadioSection,
   AIRadioSession,
   AIRadioStation,
@@ -353,8 +354,18 @@ function stopStatusPolling(): void {
   clearStatusPollTimer();
 }
 
+/** Returns what happened around the latest breaks of a show, newest first. */
+async function loadBreakLog(
+  stationId: string,
+): Promise<AIRadioBreakLogEntry[]> {
+  return api.sendCommand<AIRadioBreakLogEntry[]>("ai_radio/breaks/log", {
+    station_id: stationId,
+  });
+}
+
 export function useShows() {
   return {
+    loadBreakLog,
     shows,
     sections,
     sessions,

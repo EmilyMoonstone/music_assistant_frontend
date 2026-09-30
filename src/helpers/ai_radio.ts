@@ -491,6 +491,32 @@ export const defaultHostEffects = (): HostEffects => ({
   postDuckPercent: 60,
 });
 
+/** Returns how far a duck of the given percent lowers the music, in whole dB. */
+export const duckDecibels = (percent: number): number => {
+  const remaining = 1 - Math.min(Math.max(percent, 0), 99) / 100;
+  return Math.round(20 * Math.log10(remaining));
+};
+
+// a TTS voice speaks roughly this many characters a second
+export const SPOKEN_CHARS_PER_SECOND = 14;
+
+/** Returns roughly how many seconds a script of the given length takes to speak. */
+export const spokenSeconds = (chars: number): number =>
+  Math.round(chars / SPOKEN_CHARS_PER_SECOND);
+
+/** Returns the file name of a jingle source, or "" for the built-in gong. */
+export const jingleFileName = (source: string): string => {
+  if (source === BUILTIN_JINGLE) return "";
+  const trimmed = source.trim().replace(/[?#].*$/, "");
+  const name = trimmed.split("/").pop() || trimmed;
+  try {
+    return decodeURIComponent(name);
+  } catch {
+    // a file named with a bare "%" is not encoded, so it is shown as it is
+    return name;
+  }
+};
+
 /** Normalizes a free tag the way the server stores it: lowercase, words joined by "_". */
 export const normalizeJingleTag = (tag: string): string =>
   tag.trim().toLowerCase().split(/\s+/).filter(Boolean).join("_");
@@ -566,7 +592,11 @@ const decompileEffects = (effects?: AIRadioHostEffects): HostEffects =>
           effects.jingle_after_gap_minutes ?? DEFAULT_JINGLE_AFTER_GAP_MINUTES,
         musicBed: effects.music_bed || "",
         musicBedLevel: effects.music_bed_level ?? DEFAULT_MUSIC_BED_LEVEL,
-        leadIn: effects.lead_in ?? "cut",
+        // the fixed talk-up is gone, the server reads a stored one as a crossfade
+        leadIn:
+          effects.lead_in === "talk_up"
+            ? "crossfade"
+            : (effects.lead_in ?? "cut"),
         leadInSeconds: effects.lead_in_seconds ?? DEFAULT_LEAD_IN_SECONDS,
         postGapSeconds: effects.post_gap_seconds ?? 0.4,
         postMaxSeconds: effects.post_max_seconds ?? 0,

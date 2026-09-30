@@ -27,6 +27,17 @@ afterEach(() => {
   sendCommand.mockImplementation(async () => []);
 });
 
+// the add menu renders its entries in place, so they can be clicked like buttons
+const MENU_STUBS = {
+  DropdownMenu: { template: "<div><slot /></div>" },
+  DropdownMenuTrigger: { template: "<div><slot /></div>" },
+  DropdownMenuContent: { template: "<div><slot /></div>" },
+  DropdownMenuItem: {
+    emits: ["click"],
+    template: `<button type="button" @click="$emit('click')"><slot /></button>`,
+  },
+};
+
 function mountLibrary(jingles: HostJingle[], language?: string) {
   return mount(JingleLibrary, {
     props: {
@@ -36,11 +47,20 @@ function mountLibrary(jingles: HostJingle[], language?: string) {
         jingles.splice(0, jingles.length, ...value);
       },
     },
+    global: { stubs: MENU_STUBS },
   });
 }
 
 const button = (wrapper: ReturnType<typeof mountLibrary>, text: string) =>
   wrapper.findAll("button").find((candidate) => candidate.text() === text);
+
+/** Unfolds every jingle row, as a row only shows its name until it is opened. */
+async function unfoldAll(wrapper: ReturnType<typeof mountLibrary>) {
+  for (const name of wrapper.findAll('[data-testid="jingle-name"]')) {
+    await name.element.closest("button")!.click();
+  }
+  await flushPromises();
+}
 
 describe("JingleLibrary", () => {
   it("toggles preset tags and adds a free tag in the stored form", async () => {
@@ -48,6 +68,7 @@ describe("JingleLibrary", () => {
       { source: "/media/a.mp3", tags: [], text: "" },
     ];
     const wrapper = mountLibrary(jingles);
+    await unfoldAll(wrapper);
 
     await button(wrapper, "Late night")?.trigger("click");
     const tagInput = wrapper.find('input[aria-label="Add tag, e.g. indie"]');
@@ -69,7 +90,8 @@ describe("JingleLibrary", () => {
     ];
     const wrapper = mountLibrary(jingles);
 
-    await button(wrapper, "Read from file")?.trigger("click");
+    await unfoldAll(wrapper);
+    await button(wrapper, "Capture lyrics")?.trigger("click");
     await flushPromises();
 
     expect(sendCommand).toHaveBeenCalledWith("ai_radio/jingles/inspect", {
@@ -92,7 +114,8 @@ describe("JingleLibrary", () => {
     ];
     const wrapper = mountLibrary(jingles, "de-DE");
 
-    await button(wrapper, "Read from file")?.trigger("click");
+    await unfoldAll(wrapper);
+    await button(wrapper, "Capture lyrics")?.trigger("click");
     await flushPromises();
 
     expect(sendCommand).toHaveBeenCalledWith("ai_radio/jingles/inspect", {
@@ -118,7 +141,8 @@ describe("JingleLibrary", () => {
     ];
     const wrapper = mountLibrary(jingles);
 
-    await button(wrapper, "Read from file")?.trigger("click");
+    await unfoldAll(wrapper);
+    await button(wrapper, "Capture lyrics")?.trigger("click");
     await flushPromises();
 
     expect(jingles[0].text).toBe("Mika hier.");
@@ -137,7 +161,8 @@ describe("JingleLibrary", () => {
     ];
     const wrapper = mountLibrary(jingles, "de-DE");
 
-    await button(wrapper, "Analyze style")?.trigger("click");
+    await unfoldAll(wrapper);
+    await button(wrapper, "Capture style")?.trigger("click");
     await flushPromises();
 
     expect(sendCommand).toHaveBeenCalledWith("ai_radio/jingles/analyze", {
@@ -151,15 +176,16 @@ describe("JingleLibrary", () => {
     );
   });
 
-  it("only offers the analysis for files in the media folder", () => {
+  it("only offers the analysis for files in the media folder", async () => {
     const wrapper = mountLibrary([
       { source: "builtin", tags: [], text: "" },
       { source: "https://example.test/j.mp3", tags: [], text: "" },
     ]);
+    await unfoldAll(wrapper);
 
     const analyze = wrapper
       .findAll("button")
-      .filter((candidate) => candidate.text() === "Analyze style");
+      .filter((candidate) => candidate.text() === "Capture style");
     expect(analyze.map((b) => b.attributes("disabled"))).toEqual(["", ""]);
   });
 
@@ -167,12 +193,17 @@ describe("JingleLibrary", () => {
     const jingles: HostJingle[] = [];
     const wrapper = mountLibrary(jingles);
 
-    await button(wrapper, "Add jingle")?.trigger("click");
     await button(wrapper, "Built-in gong")?.trigger("click");
     expect(jingles).toEqual([{ source: "builtin", tags: [], text: "" }]);
+    await button(wrapper, "Enter a file or URL")?.trigger("click");
+    expect(jingles[1]).toEqual({ source: "", tags: [], text: "" });
+    // a jingle just added is unfolded, ready for its file
+    expect(
+      wrapper.findAll('input[aria-label="Jingle file or URL"]'),
+    ).toHaveLength(2);
 
     await wrapper.find('button[aria-label="Remove jingle"]').trigger("click");
-    expect(jingles).toEqual([]);
+    expect(jingles).toEqual([{ source: "", tags: [], text: "" }]);
   });
 
   it("adds jingles picked from the media folder, skipping ones it already has", async () => {
@@ -236,5 +267,19 @@ describe("JingleLibrary", () => {
       expect.anything(),
     );
     expect(toast.error).toHaveBeenCalled();
+  });
+
+  it("shows a folded jingle by its file name and warns when its words are missing", () => {
+    const wrapper = mountLibrary([
+      { source: "/media/ai_radio/news.mp3", tags: ["news"], text: "" },
+      { source: "/media/ai_radio/id.mp3", tags: [], text: "Mika hier." },
+    ]);
+
+    const names = wrapper.findAll('[data-testid="jingle-name"]');
+    expect(names.map((name) => name.text())).toEqual(["news.mp3", "id.mp3"]);
+    expect(wrapper.findAll('[data-testid="jingle-no-text"]')).toHaveLength(1);
+    expect(
+      wrapper.find('input[aria-label="Jingle file or URL"]').exists(),
+    ).toBe(false);
   });
 });

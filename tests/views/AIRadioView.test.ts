@@ -1,6 +1,7 @@
 import CreateShowDialog from "@/components/ai-radio/CreateShowDialog.vue";
 import CustomizeHost from "@/components/ai-radio/CustomizeHost.vue";
 import CustomizeShow from "@/components/ai-radio/CustomizeShow.vue";
+import ShowCard from "@/components/ai-radio/ShowCard.vue";
 import { useHosts } from "@/composables/ai-radio/useHosts";
 import { useShows } from "@/composables/ai-radio/useShows";
 import type {
@@ -363,7 +364,8 @@ describe("AIRadioView editing rights", () => {
     useShows().noAiProviderAlert.value = true;
     const wrapper = await openView();
 
-    expect(headings(wrapper)).toEqual(["Hosts", "Shows"]);
+    // the shows come first, they are what is played most
+    expect(headings(wrapper)).toEqual(["Shows", "Hosts"]);
     expect(findButtonByText(wrapper, "Add host")).toBeTruthy();
     expect(findButtonByText(wrapper, "Add show")).toBeTruthy();
     expect(findButtonByText(wrapper, "Go to Settings → Plugins")).toBeTruthy();
@@ -371,7 +373,8 @@ describe("AIRadioView editing rights", () => {
     expect(requested("ai_radio/hosts/list")).toBe(true);
     expect(requested("ai_radio/hosts/presets/list")).toBe(true);
 
-    await wrapper.find(".show-card").trigger("click");
+    // a click on the card plays the show; editing is in the card's menu
+    wrapper.findComponent(ShowCard).vm.$emit("customize", STATION_ID);
     await flushPromises();
     expect(wrapper.findComponent(CustomizeShow).exists()).toBe(true);
   });
@@ -390,7 +393,8 @@ describe("AIRadioView editing rights", () => {
       expect(
         findButtonByText(wrapper, "Go to Settings → Plugins"),
       ).toBeUndefined();
-      expect(wrapper.find('[aria-label="More options"]').exists()).toBe(false);
+      // the card's menu only holds the break log for them
+      expect(wrapper.find('[aria-label="More options"]').exists()).toBe(true);
       expect(wrapper.find('[aria-label="Play"]').exists()).toBe(true);
       expect(requested("ai_radio/hosts/list")).toBe(false);
       expect(requested("ai_radio/hosts/presets/list")).toBe(false);

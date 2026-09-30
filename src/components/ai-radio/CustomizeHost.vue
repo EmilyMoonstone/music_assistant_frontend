@@ -17,7 +17,14 @@
           {{ draft?.name || $t("providers.ai_radio.hosts.editor.title") }}
         </h1>
       </div>
-      <Button :disabled="!draft || saving" @click="handleSave">
+      <span
+        v-if="dirty"
+        class="hidden text-xs text-muted-foreground sm:inline"
+        data-testid="unsaved-changes"
+      >
+        {{ $t("providers.ai_radio.actions.unsaved") }}
+      </span>
+      <Button :disabled="!draft || saving || !dirty" @click="handleSave">
         {{
           saving
             ? $t("providers.ai_radio.actions.saving")
@@ -52,7 +59,19 @@
             <Label for="customize-host-name">
               {{ $t("providers.ai_radio.hosts.editor.name_label") }}
             </Label>
-            <Input id="customize-host-name" v-model="draft.name" />
+            <Input
+              id="customize-host-name"
+              v-model="draft.name"
+              :aria-invalid="showErrors && !draft.name.trim()"
+            />
+            <p
+              v-if="showErrors && !draft.name.trim()"
+              class="text-xs text-destructive"
+            >
+              {{
+                $t("providers.ai_radio.hosts.editor.validation.name_required")
+              }}
+            </p>
           </div>
 
           <div class="flex flex-col gap-1.5 md:col-span-2">
@@ -62,7 +81,7 @@
                 $t('providers.ai_radio.field_descriptions.instructions')
               "
             />
-            <Textarea v-model="draft.instructions" rows="4" />
+            <Textarea v-model="draft.instructions" rows="6" />
           </div>
 
           <div class="flex flex-col gap-1.5">
@@ -214,22 +233,16 @@
             />
           </div>
 
-          <div class="flex flex-col gap-1.5">
-            <FieldLabel
-              html-for="customize-host-jingle-chance"
-              :label="$t('providers.ai_radio.effects.jingleChance')"
-              :description="$t('providers.ai_radio.effects.jingleChance_help')"
-            />
-            <Input
-              id="customize-host-jingle-chance"
-              v-model.number="effects.jingleChance"
-              type="number"
-              class="h-8"
-              min="0"
-              max="100"
-              step="5"
-            />
-          </div>
+          <LabeledSlider
+            id="customize-host-jingle-chance"
+            v-model="effects.jingleChance"
+            :label="$t('providers.ai_radio.effects.jingleChance')"
+            :description="$t('providers.ai_radio.effects.jingleChance_help')"
+            :min="0"
+            :max="100"
+            :step="5"
+            :value-text="chanceText(effects.jingleChance)"
+          />
 
           <div class="flex flex-col gap-1.5">
             <FieldLabel
@@ -276,87 +289,134 @@
             />
           </div>
 
-          <div class="flex flex-col gap-1.5">
-            <FieldLabel
-              html-for="customize-host-music-bed"
-              :label="$t('providers.ai_radio.effects.musicBed')"
-              :description="$t('providers.ai_radio.effects.musicBed_help')"
-            />
-            <Input
-              id="customize-host-music-bed"
-              v-model="effects.musicBed"
-              class="h-8"
-              :placeholder="$t('providers.ai_radio.effects.source_placeholder')"
-            />
-          </div>
+          <Accordion type="single" collapsible class="md:col-span-2">
+            <AccordionItem value="bed" class="border-b-0 border-t">
+              <AccordionTrigger>
+                {{ $t("providers.ai_radio.effects.musicBed") }}
+              </AccordionTrigger>
+              <AccordionContent class="grid gap-4 pt-2 md:grid-cols-2">
+                <div class="flex flex-col gap-1.5">
+                  <FieldLabel
+                    html-for="customize-host-music-bed"
+                    :label="$t('providers.ai_radio.effects.musicBed_file')"
+                    :description="
+                      $t('providers.ai_radio.effects.musicBed_help')
+                    "
+                  />
+                  <Input
+                    id="customize-host-music-bed"
+                    v-model="effects.musicBed"
+                    class="h-8"
+                    :placeholder="
+                      $t('providers.ai_radio.effects.source_placeholder')
+                    "
+                  />
+                </div>
+                <LabeledSlider
+                  v-if="effects.musicBed.trim()"
+                  id="customize-host-music-bed-level"
+                  v-model="effects.musicBedLevel"
+                  :label="$t('providers.ai_radio.effects.musicBedLevel')"
+                  :description="
+                    $t('providers.ai_radio.effects.musicBedLevel_help')
+                  "
+                  :min="MUSIC_BED_LEVEL_RANGE.min"
+                  :max="MUSIC_BED_LEVEL_RANGE.max"
+                  :step="1"
+                  :value-text="bedLevelText(effects.musicBedLevel)"
+                />
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </CardContent>
+      </Card>
 
-          <div v-if="effects.musicBed.trim()" class="flex flex-col gap-1.5">
-            <FieldLabel
-              html-for="customize-host-music-bed-level"
-              :label="$t('providers.ai_radio.effects.musicBedLevel')"
-              :description="$t('providers.ai_radio.effects.musicBedLevel_help')"
-            />
-            <Input
-              id="customize-host-music-bed-level"
-              v-model.number="effects.musicBedLevel"
-              type="number"
-              class="h-8"
-              :min="MUSIC_BED_LEVEL_RANGE.min"
-              :max="MUSIC_BED_LEVEL_RANGE.max"
-              step="1"
-            />
-          </div>
+      <Card class="rounded-[6px]">
+        <CardHeader>
+          <CardTitle>{{
+            $t("providers.ai_radio.transitions.title")
+          }}</CardTitle>
+          <p class="text-sm text-muted-foreground">
+            {{ $t("providers.ai_radio.transitions.help") }}
+          </p>
+        </CardHeader>
+        <CardContent class="space-y-5">
+          <CrossfadeHint />
 
-          <div class="flex flex-col gap-1.5">
-            <FieldLabel
-              html-for="customize-host-lead-in"
-              :label="$t('providers.ai_radio.effects.leadIn')"
-              :description="$t('providers.ai_radio.effects.leadIn_help')"
-            />
-            <Select v-model="effects.leadIn">
-              <SelectTrigger id="customize-host-lead-in" class="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cut">
-                  {{ $t("providers.ai_radio.effects.leadIn_cut") }}
-                </SelectItem>
-                <SelectItem value="crossfade">
-                  {{ $t("providers.ai_radio.effects.leadIn_crossfade") }}
-                </SelectItem>
-                <SelectItem value="talk_up">
-                  {{ $t("providers.ai_radio.effects.leadIn_talk_up") }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <section class="space-y-3">
+            <h3 class="text-sm font-semibold">
+              {{ $t("providers.ai_radio.transitions.from_song_title") }}
+            </h3>
+            <p class="text-xs text-muted-foreground">
+              {{ $t("providers.ai_radio.transitions.from_song_help") }}
+            </p>
+            <div class="grid gap-4 md:grid-cols-2">
+              <div class="flex flex-col gap-1.5">
+                <FieldLabel
+                  html-for="customize-host-lead-in"
+                  :label="$t('providers.ai_radio.effects.leadIn')"
+                  :description="$t('providers.ai_radio.effects.leadIn_help')"
+                />
+                <Select v-model="effects.leadIn">
+                  <SelectTrigger id="customize-host-lead-in" class="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cut">
+                      {{ $t("providers.ai_radio.effects.leadIn_cut") }}
+                    </SelectItem>
+                    <SelectItem value="crossfade">
+                      {{ $t("providers.ai_radio.effects.leadIn_crossfade") }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div
+                v-if="effects.leadIn === 'crossfade'"
+                class="flex flex-col gap-1.5"
+              >
+                <FieldLabel
+                  html-for="customize-host-lead-in-seconds"
+                  :label="$t('providers.ai_radio.effects.leadInSeconds')"
+                />
+                <Input
+                  id="customize-host-lead-in-seconds"
+                  v-model.number="effects.leadInSeconds"
+                  type="number"
+                  class="h-8"
+                  :min="LEAD_IN_SECONDS_RANGE.min"
+                  :max="LEAD_IN_SECONDS_RANGE.max"
+                  step="0.5"
+                />
+              </div>
+            </div>
+          </section>
 
-          <div v-if="effects.leadIn !== 'cut'" class="flex flex-col gap-1.5">
-            <FieldLabel
-              html-for="customize-host-lead-in-seconds"
-              :label="$t('providers.ai_radio.effects.leadInSeconds')"
-            />
-            <Input
-              id="customize-host-lead-in-seconds"
-              v-model.number="effects.leadInSeconds"
-              type="number"
-              class="h-8"
-              :min="LEAD_IN_SECONDS_RANGE.min"
-              :max="LEAD_IN_SECONDS_RANGE.max"
-              step="0.5"
-            />
-          </div>
+          <section class="space-y-3">
+            <h3 class="text-sm font-semibold">
+              {{ $t("providers.ai_radio.transitions.into_song_title") }}
+            </h3>
+            <p class="text-xs text-muted-foreground">
+              {{ $t("providers.ai_radio.transitions.into_song_help") }}
+            </p>
+          </section>
 
-          <div class="flex flex-col gap-1.5 md:col-span-2">
-            <FieldLabel
-              :label="$t('providers.ai_radio.effects.post')"
-              :description="$t('providers.ai_radio.effects.post_help')"
-            />
-            <div class="grid gap-3 sm:grid-cols-3">
-              <div class="flex flex-col gap-1">
-                <Label for="customize-host-post-gap" class="text-xs">
-                  {{ $t("providers.ai_radio.effects.postGapSeconds") }}
-                </Label>
+          <section class="space-y-3">
+            <h3 class="text-sm font-semibold">
+              {{ $t("providers.ai_radio.transitions.talk_title") }}
+            </h3>
+            <p class="text-xs text-muted-foreground">
+              {{ $t("providers.ai_radio.transitions.talk_help") }}
+            </p>
+            <div class="grid gap-4 md:grid-cols-3">
+              <div class="flex flex-col gap-1.5">
+                <FieldLabel
+                  html-for="customize-host-post-gap"
+                  :label="$t('providers.ai_radio.effects.postGapSeconds')"
+                  :description="
+                    $t('providers.ai_radio.effects.postGapSeconds_help')
+                  "
+                />
                 <Input
                   id="customize-host-post-gap"
                   v-model.number="effects.postGapSeconds"
@@ -367,10 +427,14 @@
                   step="0.1"
                 />
               </div>
-              <div class="flex flex-col gap-1">
-                <Label for="customize-host-post-max" class="text-xs">
-                  {{ $t("providers.ai_radio.effects.postMaxSeconds") }}
-                </Label>
+              <div class="flex flex-col gap-1.5">
+                <FieldLabel
+                  html-for="customize-host-post-max"
+                  :label="$t('providers.ai_radio.effects.postMaxSeconds')"
+                  :description="
+                    $t('providers.ai_radio.effects.postMaxSeconds_help')
+                  "
+                />
                 <Input
                   id="customize-host-post-max"
                   v-model.number="effects.postMaxSeconds"
@@ -381,22 +445,17 @@
                   step="0.5"
                 />
               </div>
-              <div class="flex flex-col gap-1">
-                <Label for="customize-host-post-duck" class="text-xs">
-                  {{ $t("providers.ai_radio.effects.postDuckPercent") }}
-                </Label>
-                <Input
-                  id="customize-host-post-duck"
-                  v-model.number="effects.postDuckPercent"
-                  type="number"
-                  class="h-8"
-                  min="0"
-                  max="90"
-                  step="5"
-                />
-              </div>
+              <LabeledSlider
+                id="customize-host-post-duck"
+                v-model="effects.postDuckPercent"
+                :label="$t('providers.ai_radio.effects.postDuckPercent')"
+                :min="0"
+                :max="90"
+                :step="5"
+                :value-text="duckText(effects.postDuckPercent)"
+              />
             </div>
-          </div>
+          </section>
         </CardContent>
       </Card>
 
@@ -434,7 +493,8 @@
         <CardContent class="space-y-2">
           <p
             v-if="draft.segments.length === 0"
-            class="py-6 text-center text-sm text-muted-foreground"
+            class="py-6 text-center text-sm"
+            :class="showErrors ? 'text-destructive' : 'text-muted-foreground'"
           >
             {{ $t("providers.ai_radio.customize.segments_empty") }}
           </p>
@@ -444,19 +504,32 @@
             :segment="segment"
             :can-move-up="index > 0"
             :can-move-down="index < draft.segments.length - 1"
+            :invalid="showErrors && !segment.prompt.trim()"
+            :probing="probe.index === index && probe.busy"
             @update="(value) => updateSegment(index, value)"
+            @probe="runProbe(index)"
             @move-up="moveSegment(index, -1)"
             @move-down="moveSegment(index, 1)"
             @remove="removeSegment(index)"
           />
         </CardContent>
       </Card>
+      <ProbeResultDialog
+        v-model:open="probe.open"
+        :segment-name="draft.segments[probe.index]?.name ?? ''"
+        :busy="probe.busy"
+        :result="probe.result"
+        @again="runProbe(probe.index)"
+      />
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
+import CrossfadeHint from "@/components/ai-radio/CrossfadeHint.vue";
 import FieldLabel from "@/components/ai-radio/FieldLabel.vue";
+import LabeledSlider from "@/components/ai-radio/LabeledSlider.vue";
+import ProbeResultDialog from "@/components/ai-radio/ProbeResultDialog.vue";
 import SegmentRow from "@/components/ai-radio/SegmentRow.vue";
 import {
   Accordion,
@@ -492,6 +565,7 @@ import {
   deepClone,
   decompileHost,
   defaultHostEffects,
+  duckDecibels,
   errorMessage,
   GENERIC_HOST_INSTRUCTIONS,
   GENERIC_HOST_SEGMENTS,
@@ -509,7 +583,8 @@ import {
 import { eventbus } from "@/plugins/eventbus";
 import { $t, canonicalizeLocale, getLocaleOptions, i18n } from "@/plugins/i18n";
 import { ArrowLeft, ChevronDown, Plus, Trash2 } from "@lucide/vue";
-import { computed, onMounted, ref, watch } from "vue";
+import type { AIRadioProbeResult } from "@/plugins/api/interfaces";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { toast } from "vue-sonner";
 
@@ -535,6 +610,7 @@ const {
   saveSections,
   saveHost,
   loadTtsEngines,
+  probeSegment,
 } = useHosts();
 
 const loading = ref(true);
@@ -543,8 +619,11 @@ const saving = ref(false);
 const draft = ref<HostDraft | null>(null);
 let originalSnapshot = "";
 
+// a new host has not been saved yet, so it can always be saved
 const dirty = computed(
-  () => !!draft.value && JSON.stringify(draft.value) !== originalSnapshot,
+  () =>
+    !!draft.value &&
+    (!props.hostId || JSON.stringify(draft.value) !== originalSnapshot),
 );
 
 const voiceSelectValue = computed({
@@ -593,6 +672,89 @@ watch(
   },
   { immediate: true },
 );
+
+// set by a failed save, so the fields that stopped it are marked until they are fixed
+const showErrors = ref(false);
+
+/** The share of transitions a jingle opens, read out with a word for how often that is. */
+function chanceText(percent: number): string {
+  const word =
+    percent === 0
+      ? "never"
+      : percent <= 20
+        ? "rarely"
+        : percent <= 50
+          ? "sometimes"
+          : percent < 100
+            ? "often"
+            : "always";
+  return `${percent} % · ${$t(`providers.ai_radio.levels.chance_${word}`)}`;
+}
+
+/** How far the music drops under the voice, in percent, in dB and in a word. */
+function duckText(percent: number): string {
+  const word =
+    percent < 30
+      ? "slightly"
+      : percent < 60
+        ? "quieter"
+        : percent < 80
+          ? "much"
+          : "almost_off";
+  return `${percent} % · ${duckDecibels(percent)} dB · ${$t(
+    `providers.ai_radio.levels.duck_${word}`,
+  )}`;
+}
+
+/** How far below the voice the bed sits, in dB and in a word. */
+function bedLevelText(level: number): string {
+  const word =
+    level <= -30
+      ? "barely"
+      : level <= -20
+        ? "quiet"
+        : level <= -12
+          ? "clear"
+          : "prominent";
+  return `${level} dB · ${$t(`providers.ai_radio.levels.bed_${word}`)}`;
+}
+
+const probe = reactive<{
+  open: boolean;
+  busy: boolean;
+  index: number;
+  result: AIRadioProbeResult | null;
+}>({ open: false, busy: false, index: -1, result: null });
+
+/** Plays one segment as the draft has it, and shows what the host said. */
+async function runProbe(index: number) {
+  if (!draft.value || probe.busy) return;
+  const segment = draft.value.segments[index];
+  if (!segment?.prompt.trim()) {
+    toast.error(
+      $t("providers.ai_radio.hosts.editor.validation.segment_prompt_required"),
+    );
+    return;
+  }
+  const { host, sections: compiledSections } = compileHost(draft.value);
+  probe.index = index;
+  probe.result = null;
+  probe.busy = true;
+  probe.open = true;
+  try {
+    const result = await probeSegment(host, compiledSections[index]);
+    if (!result) {
+      probe.open = false;
+      return;
+    }
+    probe.result = result;
+  } catch (error) {
+    probe.open = false;
+    toast.error(errorMessage(error));
+  } finally {
+    probe.busy = false;
+  }
+}
 
 function updateSegment(index: number, segment: ShowSegment) {
   draft.value?.segments.splice(index, 1, segment);
@@ -739,6 +901,7 @@ async function handleSave() {
   if (!draft.value) return;
   const validationError = validate(draft.value);
   if (validationError) {
+    showErrors.value = true;
     toast.error(validationError);
     return;
   }

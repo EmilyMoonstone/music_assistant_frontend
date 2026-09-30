@@ -2058,8 +2058,45 @@ export interface AIRadioHostEffects {
   post_duck_percent?: number;
 }
 
-/** "talk_up" starts the break at full level over the song's fading outro. */
+/** A stored "talk_up" (the old fixed talk-up) reads as a crossfade. */
 export type AIRadioLeadIn = "cut" | "crossfade" | "talk_up";
+
+/** Why a post, a talk-over or a crossfade did not happen, with the seconds it names. */
+export interface AIRadioBreakReason {
+  code: string;
+  seconds?: number;
+}
+
+/** How a break met one of the songs around it. */
+export interface AIRadioBreakTransition {
+  // from the song: talk_over, crossfade or cut; into the song: post, jingle or direct
+  kind: string;
+  seconds?: number;
+  reason?: AIRadioBreakReason;
+}
+
+/** What ai_radio/breaks/log tells about one break. */
+export interface AIRadioBreakLogEntry {
+  queue_item_id: string;
+  at: string;
+  section: string;
+  session_id: string;
+  station_id: string;
+  host_id: string;
+  text: string;
+  jingle_before: string;
+  jingle_after: string;
+  from_song: AIRadioBreakTransition;
+  into_song: AIRadioBreakTransition;
+  skipped: { code: string; detail: string } | null;
+}
+
+/** What ai_radio/hosts/probe played: the script, its opening jingle and its length. */
+export interface AIRadioProbeResult {
+  text: string;
+  jingle: string;
+  seconds: number;
+}
 
 /** One jingle of a host's library: "builtin" = the shipped gong, else a path or URL. */
 export interface AIRadioJingle {

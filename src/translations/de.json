@@ -1739,30 +1739,35 @@
                 "saving": "Speichern...",
                 "up": "Nach oben",
                 "down": "Nach unten",
-                "remove": "Entfernen"
+                "remove": "Entfernen",
+                "unsaved": "Ungespeicherte Änderungen"
             },
             "fields": {
                 "source_playtime_cap": "Quellen-Spielzeitbegrenzung (Minuten)",
                 "default_playback_device": "Standard-Wiedergabegerät (optional)",
                 "web_search_mode": "Web-Suchmodus",
-                "character_limit": "Zeichenbegrenzung",
+                "character_limit": "Maximale Länge (Zeichen)",
                 "prompt": "Eingabeaufforderung",
                 "instructions": "Anweisungen für Gastgeber und Programm",
                 "shuffle_playlist_tracks": "Wiedergabeliste zufällig abspielen",
                 "voice": "Stimme",
                 "host": "Host",
-                "language": "Sprache"
+                "language": "Sprache",
+                "allow_post": "Ins Intro sprechen",
+                "allow_talk_over": "Ins Outro sprechen"
             },
             "field_descriptions": {
                 "source_playtime_cap": "Maximale Gesamtspielzeit der Hintergrundmusik in Minuten. Die Titel werden in der Reihenfolge abgespielt, in der sie in der Sendung vorkommen, bis die Obergrenze erreicht ist. Für keine Begrenzung den Wert auf 0 setzen.",
                 "instructions": "Beschreibt die Persönlichkeit des Moderators und wie die Beiträge verfasst werden sollen. Diese Beschreibung wird zusammen mit jedem Beitrag an die AI gesendet.",
-                "shuffle_playlist_tracks": "Die Quell-Wiedergabeliste wird in zufälliger Reihenfolge abgespielt. Deaktiviere diese Option, um die Reihenfolge der Wiedergabeliste beizubehalten."
+                "shuffle_playlist_tracks": "Die Quell-Wiedergabeliste wird in zufälliger Reihenfolge abgespielt. Deaktiviere diese Option, um die Reihenfolge der Wiedergabeliste beizubehalten.",
+                "allow_post": "Die Moderation endet über dem Anfang des nächsten Songs, bevor der Gesang einsetzt (Post). Braucht die Lyrics des Songs mit Zeitstempeln und ein ausreichend langes Intro.",
+                "allow_talk_over": "Die Moderation beginnt über dem Ende des vorherigen Songs, sobald dort nicht mehr gesungen wird. Der Song läuft leise darunter weiter. Braucht die Lyrics des Songs mit Zeitstempeln und ein ausreichend langes Outro."
             },
             "web_search": {
-                "disabled": "deaktiviert (kein Web-Tool)",
-                "allow": "zulassen (Modell darf Web verwenden)",
-                "force": "erzwingen (Websuche erforderlich)",
-                "help": "Ob der Moderator für dieses Segment im Internet nachschlagen darf."
+                "disabled": "Aus",
+                "allow": "Bei Bedarf",
+                "force": "Immer (z. B. News)",
+                "help": "Ob der Moderator für dieses Segment im Internet nachschlägt. News brauchen „Immer“."
             },
             "plays": {
                 "start": "Zu Beginn",
@@ -1822,7 +1827,9 @@
                 "new_show": "Neue Sendung",
                 "refresh": "Aktualisieren",
                 "title": "Sendungen",
-                "add_show": "Sendung hinzufügen"
+                "add_show": "Sendung hinzufügen",
+                "empty_title_listener": "Noch keine Shows",
+                "empty_description_listener": "Es wurden noch keine Radioshows eingerichtet. Schau wieder vorbei, sobald jemand eine erstellt hat."
             },
             "card": {
                 "play": "Abspielen",
@@ -1840,7 +1847,9 @@
                 "start_failed": "Start fehlgeschlagen von: {0}",
                 "switch_show_title": "Sendung wechseln?",
                 "switch_show_confirm": "„{0}“ läuft gerade. Ausschalten und stattdessen „{1}“ abspielen?",
-                "switch_show_confirm_label": "Umschalten"
+                "switch_show_confirm_label": "Umschalten",
+                "play_show": "{0} abspielen",
+                "log": "Protokoll"
             },
             "create": {
                 "title": "Eine Sendung erstellen",
@@ -1889,10 +1898,7 @@
                 "host_required": "Wähle einen Host aus, bevor du speicherst",
                 "no_hosts_hint": "Du benötigst einen Moderator, bevor du diese Sendung speichern kannst.",
                 "create_host_cta": "Einen Host erstellen",
-                "prompt_placeholders_label": "Platzhalter – zum Kopieren antippen:",
-                "prompt_placeholder_copied": "{0} wurde in die Zwischenablage kopiert",
-                "prompt_placeholder_copy_failed": "{0} konnte nicht in die Zwischenablage kopiert werden",
-                "prompt_placeholder_copy_aria": "Kopiere {0}",
+                "prompt_placeholders_label": "Platzhalter, klicken zum Einfügen an der Cursorposition:",
                 "personality_title": "Persönlichkeit",
                 "tts_options_title": "Erweiterte TTS-Optionen",
                 "tts_options_help": "Füge nur Schlüssel hinzu, die von der von dir ausgewählten Engine unterstützt werden, da ein nicht unterstützter Schlüssel dazu führen kann, dass der gesamte Clip abgelehnt wird.",
@@ -1901,7 +1907,14 @@
                 "option_value": "Optionswert",
                 "option_value_placeholder": "z.B. en_US-lessac-medium",
                 "add_option": "Option hinzufügen",
-                "remove_option": "Option entfernen"
+                "remove_option": "Option entfernen",
+                "group_content": "Inhalt",
+                "group_transitions": "Übergänge und Jingles",
+                "side_start": "Anfang: aus dem Song",
+                "side_end": "Ende: in den Song",
+                "spoken_seconds": "Etwa {0} s gesprochen",
+                "no_length_limit": "Keine Längenbegrenzung",
+                "prompt_placeholder_insert": "{0} einfügen"
             },
             "hosts": {
                 "title": "Hosts",
@@ -1924,6 +1937,224 @@
                     "default_language": "Serversprache übernehmen"
                 },
                 "blank_host": "Leerer Host"
+            },
+            "effects": {
+                "title": "Jingles",
+                "help": "Die Jingles, mit denen der Moderator Moderationen eröffnet und beendet. Dateien aus dem Medienordner von Home Assistant oder URLs.",
+                "builtin": "Eingebauter Gong",
+                "jingles": "Jingles",
+                "jingles_count": "Jingles ({0})",
+                "jingles_show": "Jingles anzeigen",
+                "jingles_hide": "Jingles ausblenden",
+                "jingles_help": "News, Wetter, Intro und Outro beginnen mit einem passend getaggten Jingle; Intro und Outro greifen sonst auf allgemeine zurück. Tageszeit-Tags beschränken einen Jingle auf seine Stunden, andere Tags (Genre oder Stimmung) helfen, einen zum nächsten Song passenden zu wählen.",
+                "jingle_source": "Jingle-Datei oder URL",
+                "jingle_text": "Was der Jingle sagt",
+                "jingle_text_placeholder": "Der Text im Jingle, damit die KI einen passenden wählt und ihn nicht wiederholt",
+                "read_from_file": "Lyrics erfassen",
+                "read_from_file_help": "Liest den Text des Jingles aus seinem Lyrics-Tag oder hört ihn sich an.",
+                "analyze_style": "Stil erfassen",
+                "analyze_style_help": "Die KI hört sich den Jingle an und schlägt Tags, seinen Text und eine Beschreibung des Stils vor. Geht für Dateien im Medienordner.",
+                "analyze_style_done": "Tags hinzugefügt: {0}. {1}",
+                "analyze_style_nothing_new": "Keine neuen Tags. {0}",
+                "no_words_in_file": "Weder der Lyrics-Tag noch die Spracherkennung haben Text in der Datei gefunden. Bitte trag ihn selbst ein.",
+                "words_from_speech": "Die Datei hat keinen Lyrics-Tag, der Text wurde deshalb per Spracherkennung ermittelt. Bitte prüfen.",
+                "browse": "Aus dem Medienordner wählen",
+                "browse_title": "Jingles wählen",
+                "browse_description": "Wähle Audiodateien aus dem Medienordner von Home Assistant. Der Text eines Jingles wird aus der Datei gelesen, wenn sie ihn enthält.",
+                "browse_up": "Einen Ordner nach oben",
+                "browse_empty": "Hier gibt es keine Ordner oder Audiodateien.",
+                "browse_select_all": "Alle in diesem Ordner auswählen",
+                "browse_add": "Ausgewählte hinzufügen ({0})",
+                "preview": "Auf dem aktiven Player abspielen",
+                "preview_file": "{0} auf dem aktiven Player abspielen",
+                "preview_no_player": "Wähle zuerst einen Player, der Jingle spielt auf dem aktiven.",
+                "add_jingle": "Jingle hinzufügen",
+                "remove_jingle": "Jingle entfernen",
+                "add_tag": "Tag hinzufügen, z. B. indie",
+                "remove_tag": "Tag {0} entfernen",
+                "tags": {
+                    "general": "Allgemein",
+                    "news": "News",
+                    "weather": "Wetter",
+                    "intro": "Intro",
+                    "outro": "Outro",
+                    "morning": "Morgens",
+                    "daytime": "Tagsüber",
+                    "evening": "Abends",
+                    "late_night": "Nachts"
+                },
+                "jingleChance": "Jingle-Häufigkeit bei Übergängen",
+                "jingleChance_help": "Wie oft ein normaler Übergang zwischen zwei Songs mit einem allgemeinen Jingle beginnt.",
+                "jingleSelection": "Jingle-Auswahl",
+                "jingleSelection_help": "Die KI, die die Moderation schreibt, wählt im selben Aufruf die passendsten Jingles, oder es wird zufällig unter den passenden gewählt.",
+                "selection_ai": "KI wählt",
+                "selection_random": "Zufällig",
+                "leadIn": "Sonst",
+                "leadIn_help": "Schnitt: Die Moderation beginnt, wenn der Song zu Ende ist. Crossfade: Sie blendet über die letzten Sekunden des Songs ein, aber nie über Gesang, soweit die Lyrics das zeigen.",
+                "leadIn_cut": "Schnitt",
+                "leadIn_crossfade": "Crossfade",
+                "leadInSeconds": "Crossfade-Länge (s)",
+                "postGapSeconds": "Abstand zum Gesang (s)",
+                "postGapSeconds_help": "Wie viel Musik zwischen Stimme und Gesang bleibt.",
+                "postMaxSeconds": "Längste Überlappung (s)",
+                "postMaxSeconds_help": "Wie lange die Stimme höchstens über einem Song läuft, 0 für unbegrenzt.",
+                "postDuckPercent": "Musik unter der Stimme",
+                "jingle_before": "Jingle am Anfang",
+                "jingle_after": "Jingle am Ende",
+                "jingle_mode_auto": "Automatisch",
+                "jingle_mode_always": "Immer",
+                "jingle_mode_never": "Nie",
+                "jingle_before_mode_no_post": "Nur wenn nicht ins Outro gesprochen wird",
+                "jingle_after_mode_no_post": "Nur wenn kein Post möglich ist",
+                "jingle_before_modes_help": {
+                    "auto": "Folgt dem Moderator: News, Wetter sowie Anfang und Ende der Show beginnen mit ihrem Jingle, andere Moderationen nach der Jingle-Häufigkeit.",
+                    "always": "Jede Moderation dieses Segments beginnt mit einem Jingle.",
+                    "no_post": "Beginnt jedes Mal mit einem Jingle, außer die Moderation startet über dem Outro des vorherigen Songs.",
+                    "never": "Dieses Segment beginnt nie mit einem Jingle."
+                },
+                "jingle_after_modes_help": {
+                    "auto": "Die KI beendet die Moderation mit einem Jingle, wo es passt, etwa nach den News oder vor einem Song, der sofort mit Gesang beginnt, höchstens einmal im Abstand des Moderators.",
+                    "always": "Jede Moderation dieses Segments endet mit einem Jingle.",
+                    "no_post": "Endet jedes Mal mit einem Jingle, außer die Moderation kann ins Intro des nächsten Songs sprechen.",
+                    "never": "Dieses Segment endet nie mit einem Jingle."
+                },
+                "jingleAfterGapMinutes": "Minuten zwischen Schluss-Jingles",
+                "jingleAfterGapMinutes_help": "So oft beendet der Moderator eine Moderation höchstens von sich aus mit einem Jingle. Segmente mit „Immer“ sind davon ausgenommen.",
+                "musicBed": "Musikunterlage",
+                "musicBed_file": "Datei der Unterlage",
+                "musicBed_help": "Läuft leise in Schleife unter jeder Moderation und blendet nach dem letzten Wort aus. Leer lassen für keine.",
+                "musicBedLevel": "Lautstärke der Unterlage",
+                "musicBedLevel_help": "Wie weit die Unterlage unter der Stimme liegt, von -40 dB (kaum hörbar) bis -6 dB (präsent).",
+                "source_placeholder": "\/media\/ai_radio\/jingle.mp3",
+                "no_text_warning": "Kein Text hinterlegt: Der Moderator könnte wiederholen, was der Jingle sagt. Erfasse seine Lyrics.",
+                "new_jingle": "Neuer Jingle",
+                "add_by_path": "Datei oder URL eingeben"
+            },
+            "running_order": {
+                "label": "Song-Reihenfolge",
+                "help": "Playlist mischen, ihre Reihenfolge behalten oder die KI eine Reihenfolge zusammenstellen lassen wie ein Musikredakteur.",
+                "shuffle": "Zufällig",
+                "playlist": "Playlist-Reihenfolge",
+                "ai": "KI-Reihenfolge",
+                "max_tracks": "Songs in der Reihenfolge",
+                "max_tracks_help": "Die KI ordnet eine zufällige Auswahl von so vielen Songs aus der Playlist, so klingt jede Show anders. Mehr Songs brauchen länger, bevor die Show startet.",
+                "prompt": "Prompt für die Reihenfolge",
+                "prompt_help": "Ersetzt den eingebauten Prompt. {0} steht für die Startzeit der Show. Leer lassen für den eingebauten.",
+                "prompt_placeholder": "Eingebaut: Songs passend zur Tageszeit, eine abwechslungsreiche Mischung ohne denselben Künstler zweimal hintereinander und Nachbarn, die zusammenpassen."
+            },
+            "wish": {
+                "title": "{0} starten",
+                "description": "Die KI stellt die Reihenfolge für diese Show zusammen. Gibt es etwas, das sie beachten soll?",
+                "label": "Wunsch für diese Show",
+                "placeholder": "z. B. ruhig, wir kochen gerade (optional)",
+                "start": "Starten"
+            },
+            "log": {
+                "title": "Protokoll: {0}",
+                "description": "Was bei den letzten Moderationen dieser Show passiert ist: was der Moderator gesagt hat, welche Jingles liefen und wie die Moderation an die Songs anschloss.",
+                "empty": "Noch keine Moderationen. Spiel die Show ab, dann erscheinen sie hier.",
+                "skipped": "Ausgelassen",
+                "from_song": "Aus dem Song:",
+                "into_song": "In den Song:",
+                "opener": "Jingle am Anfang:",
+                "script": "Was der Moderator gesagt hat",
+                "refresh": "Aktualisieren",
+                "from_kinds": {
+                    "talk_over": "ins Outro gesprochen ({0} s)",
+                    "crossfade": "Crossfade ({0} s)",
+                    "cut": "Schnitt"
+                },
+                "into_kinds": {
+                    "post": "ins Intro gesprochen ({0} s)",
+                    "jingle": "Schluss-Jingle {1}",
+                    "direct": "direkt in den Song"
+                },
+                "reasons": {
+                    "no_song_before": "kein Song vor der Moderation",
+                    "unknown_length": "Länge des Songs unbekannt",
+                    "crossfade_off": "Crossfade ist für diesen Player aus",
+                    "no_track_details": "keine Songdaten",
+                    "lyrics_timeout": "Lyrics-Suche hat zu lange gedauert",
+                    "lyrics_failed": "Lyrics-Suche fehlgeschlagen",
+                    "no_sung_line": "die Lyrics enthalten keine gesungene Zeile",
+                    "unsynced_lyrics": "nur Lyrics ohne Zeitstempel",
+                    "no_lyrics": "keine Lyrics gefunden",
+                    "little_outro": "Gesang bis {0} s, zu wenig Outro",
+                    "singing_to_end": "Gesang bis zum Schluss",
+                    "closing_jingle": "ein Schluss-Jingle führt in den Song",
+                    "no_next_track": "kein nächster Song",
+                    "early_vocal": "Gesang beginnt bei {0} s",
+                    "staging_failed": "Audio konnte nicht vorbereitet werden",
+                    "break_too_short": "Moderation ist nur {0} s lang",
+                    "queue_changed": "danach kam ein anderer Song",
+                    "staged_gone": "vorbereitetes Audio war nicht mehr da"
+                },
+                "skip_reasons": {
+                    "no_prompt": "Das Segment hat keinen Prompt.",
+                    "no_weather": "Keine Wetterdaten, und das Segment braucht sie.",
+                    "generation_failed": "Die KI konnte die Moderation nicht schreiben.",
+                    "tts_failed": "Die Stimme konnte nicht erzeugt werden.",
+                    "failed": "Die Moderation konnte nicht erstellt werden."
+                }
+            },
+            "crossfade_hint": {
+                "title": "Crossfade ist aus",
+                "description": "Für {0} ist Crossfade aus. Moderationen setzen deshalb immer hart ein, und niemand spricht über einen Song. Übergänge und Posts brauchen Crossfade.",
+                "enable": "Crossfade einschalten"
+            },
+            "transitions": {
+                "title": "Übergänge",
+                "help": "Wie Moderationen an die Songs anschließen. Der Moderator spricht nie über Gesang: Wo er beginnt und endet, steht in den Lyrics des Songs mit Zeitstempeln.",
+                "from_song_title": "Vom Song in die Moderation",
+                "from_song_help": "Segmente mit „Ins Outro sprechen“ beginnen, sobald nicht mehr gesungen wird, und der Song läuft leise weiter. Sonst, oder wenn die Lyrics eines Songs fehlen, gilt:",
+                "into_song_title": "Von der Moderation in den Song",
+                "into_song_help": "Segmente mit „Ins Intro sprechen“ enden über dem Intro des nächsten Songs, bevor der Gesang einsetzt. Sonst geht es direkt in den Song oder über einen Schluss-Jingle, wie im Segment eingestellt.",
+                "talk_title": "Über Songs sprechen",
+                "talk_help": "Gilt für beides: fürs Intro und fürs Outro."
+            },
+            "levels": {
+                "chance_never": "nie",
+                "chance_rarely": "selten",
+                "chance_sometimes": "manchmal",
+                "chance_often": "oft",
+                "chance_always": "immer",
+                "duck_slightly": "etwas leiser",
+                "duck_quieter": "leiser",
+                "duck_much": "deutlich leiser",
+                "duck_almost_off": "fast still",
+                "bed_barely": "kaum hörbar",
+                "bed_quiet": "leise",
+                "bed_clear": "deutlich hörbar",
+                "bed_prominent": "präsent"
+            },
+            "probe": {
+                "button": "Probe hören",
+                "button_help": "Schreibt eine Moderation dieses Segments und spielt sie auf dem aktiven Player, mit den aktuellen Einstellungen, gespeichert oder nicht.",
+                "title": "Probe: {0}",
+                "description": "Läuft auf dem aktiven Player, mit den Songs, die er gerade spielt, oder mit Beispielen. Für die Show wird nichts davon gemerkt.",
+                "working": "Moderation wird geschrieben und aufgenommen…",
+                "meta": "{0} s",
+                "meta_jingle": "{0} s, beginnt mit {1}",
+                "again": "Nochmal",
+                "no_player": "Wähle zuerst einen Player, die Probe läuft auf dem aktiven."
+            },
+            "placeholders": {
+                "prev_songinfo": "Vorheriger Song",
+                "next_songinfo": "Nächster Song",
+                "very_next_songinfo": "Übernächster Song",
+                "timestamp": "Datum und Uhrzeit",
+                "weather_hourly": "Wetter, nächste Stunden",
+                "weather_daily": "Wetter, nächste Tage",
+                "recent_breaks": "Letzte Moderationen",
+                "recent_news": "Letzte News"
+            },
+            "badges": {
+                "talk_over": "Spricht ins Outro",
+                "post": "Spricht ins Intro",
+                "jingle_before": "Anfang: {0}",
+                "jingle_after": "Ende: {0}",
+                "web_allow": "Web bei Bedarf",
+                "web_force": "Web immer"
             }
         }
     },

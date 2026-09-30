@@ -17,7 +17,14 @@
           {{ draft?.basics.name || $t("providers.ai_radio.customize.title") }}
         </h1>
       </div>
-      <Button :disabled="!draft || saving" @click="handleSave">
+      <span
+        v-if="dirty"
+        class="hidden text-xs text-muted-foreground sm:inline"
+        data-testid="unsaved-changes"
+      >
+        {{ $t("providers.ai_radio.actions.unsaved") }}
+      </span>
+      <Button :disabled="!draft || saving || !dirty" @click="handleSave">
         {{
           saving
             ? $t("providers.ai_radio.actions.saving")
@@ -115,7 +122,70 @@
                 </SelectItem>
               </SelectContent>
             </Select>
+            <CrossfadeHint
+              :player-id="draft.basics.defaultPlayerId || undefined"
+            />
           </div>
+          <div class="flex flex-col gap-1.5">
+            <FieldLabel
+              html-for="customize-track-order"
+              :label="$t('providers.ai_radio.running_order.label')"
+              :description="$t('providers.ai_radio.running_order.help')"
+            />
+            <Select v-model="trackOrder">
+              <SelectTrigger id="customize-track-order" class="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="shuffle">
+                  {{ $t("providers.ai_radio.running_order.shuffle") }}
+                </SelectItem>
+                <SelectItem value="playlist">
+                  {{ $t("providers.ai_radio.running_order.playlist") }}
+                </SelectItem>
+                <SelectItem value="ai">
+                  {{ $t("providers.ai_radio.running_order.ai") }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <template v-if="trackOrder === 'ai'">
+            <div class="flex flex-col gap-1.5">
+              <FieldLabel
+                html-for="customize-ai-order-max-tracks"
+                :label="$t('providers.ai_radio.running_order.max_tracks')"
+                :description="
+                  $t('providers.ai_radio.running_order.max_tracks_help')
+                "
+              />
+              <Input
+                id="customize-ai-order-max-tracks"
+                v-model.number="draft.basics.aiOrderMaxTracks"
+                type="number"
+                :min="AI_ORDER_MAX_TRACKS_RANGE.min"
+                :max="AI_ORDER_MAX_TRACKS_RANGE.max"
+              />
+            </div>
+            <div class="flex flex-col gap-1.5 md:col-span-2">
+              <FieldLabel
+                html-for="customize-ai-order-prompt"
+                :label="$t('providers.ai_radio.running_order.prompt')"
+                :description="
+                  $t('providers.ai_radio.running_order.prompt_help', [
+                    '<timestamp>',
+                  ])
+                "
+              />
+              <Textarea
+                id="customize-ai-order-prompt"
+                v-model="draft.basics.aiOrderPrompt"
+                rows="4"
+                :placeholder="
+                  $t('providers.ai_radio.running_order.prompt_placeholder')
+                "
+              />
+            </div>
+          </template>
         </CardContent>
       </Card>
 
@@ -145,66 +215,6 @@
                 </NumberFieldContent>
               </NumberField>
             </div>
-            <div class="flex flex-col gap-1.5">
-              <FieldLabel
-                html-for="customize-track-order"
-                :label="$t('providers.ai_radio.running_order.label')"
-                :description="$t('providers.ai_radio.running_order.help')"
-              />
-              <Select v-model="trackOrder">
-                <SelectTrigger id="customize-track-order" class="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="shuffle">
-                    {{ $t("providers.ai_radio.running_order.shuffle") }}
-                  </SelectItem>
-                  <SelectItem value="playlist">
-                    {{ $t("providers.ai_radio.running_order.playlist") }}
-                  </SelectItem>
-                  <SelectItem value="ai">
-                    {{ $t("providers.ai_radio.running_order.ai") }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <template v-if="trackOrder === 'ai'">
-              <div class="flex flex-col gap-1.5">
-                <FieldLabel
-                  html-for="customize-ai-order-max-tracks"
-                  :label="$t('providers.ai_radio.running_order.max_tracks')"
-                  :description="
-                    $t('providers.ai_radio.running_order.max_tracks_help')
-                  "
-                />
-                <Input
-                  id="customize-ai-order-max-tracks"
-                  v-model.number="draft.basics.aiOrderMaxTracks"
-                  type="number"
-                  :min="AI_ORDER_MAX_TRACKS_RANGE.min"
-                  :max="AI_ORDER_MAX_TRACKS_RANGE.max"
-                />
-              </div>
-              <div class="flex flex-col gap-1.5 md:col-span-2">
-                <FieldLabel
-                  html-for="customize-ai-order-prompt"
-                  :label="$t('providers.ai_radio.running_order.prompt')"
-                  :description="
-                    $t('providers.ai_radio.running_order.prompt_help', [
-                      '<timestamp>',
-                    ])
-                  "
-                />
-                <Textarea
-                  id="customize-ai-order-prompt"
-                  v-model="draft.basics.aiOrderPrompt"
-                  rows="4"
-                  :placeholder="
-                    $t('providers.ai_radio.running_order.prompt_placeholder')
-                  "
-                />
-              </div>
-            </template>
           </AccordionContent>
         </AccordionItem>
       </Accordion>
@@ -216,6 +226,7 @@
 import AiRadioPlaylistPicker, {
   type PlaylistSelection,
 } from "@/components/ai-radio/AiRadioPlaylistPicker.vue";
+import CrossfadeHint from "@/components/ai-radio/CrossfadeHint.vue";
 import FieldLabel from "@/components/ai-radio/FieldLabel.vue";
 import {
   Accordion,

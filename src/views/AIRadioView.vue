@@ -44,47 +44,6 @@
         </Button>
       </header>
 
-      <div v-if="canEdit" class="space-y-3">
-        <div class="flex items-center justify-between gap-3">
-          <h2 class="text-lg font-semibold tracking-tight">
-            {{ $t("providers.ai_radio.hosts.title") }}
-          </h2>
-          <DropdownMenu>
-            <DropdownMenuTrigger as-child>
-              <Button>
-                <Plus class="mr-1 h-4 w-4" />
-                {{ $t("providers.ai_radio.hosts.add_host") }}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem @click="openCustomizeHost()">
-                {{ $t("providers.ai_radio.hosts.blank_host") }}
-              </DropdownMenuItem>
-              <template v-if="presets.length">
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  v-for="preset in presets"
-                  :key="preset.host.id"
-                  @click="openCustomizeHostFromPreset(preset)"
-                >
-                  {{ preset.host.name }}
-                </DropdownMenuItem>
-              </template>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        <div
-          class="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(170px,1fr))]"
-        >
-          <HostCard
-            v-for="host in hosts"
-            :key="host.id"
-            :host="host"
-            @edit="openCustomizeHost"
-          />
-        </div>
-      </div>
-
       <Alert v-if="noAiProviderAlert" variant="warning" class="relative pr-10">
         <TriangleAlert class="h-4 w-4" />
         <AlertTitle>{{ $t("providers.ai_radio.prereq.title") }}</AlertTitle>
@@ -162,6 +121,47 @@
             :key="show.id"
             :show="show"
             @customize="onCustomize"
+          />
+        </div>
+      </div>
+
+      <div v-if="canEdit" class="space-y-3">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-lg font-semibold tracking-tight">
+            {{ $t("providers.ai_radio.hosts.title") }}
+          </h2>
+          <DropdownMenu>
+            <DropdownMenuTrigger as-child>
+              <Button>
+                <Plus class="mr-1 h-4 w-4" />
+                {{ $t("providers.ai_radio.hosts.add_host") }}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem @click="openCustomizeHost()">
+                {{ $t("providers.ai_radio.hosts.blank_host") }}
+              </DropdownMenuItem>
+              <template v-if="presets.length">
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  v-for="preset in presets"
+                  :key="preset.host.id"
+                  @click="openCustomizeHostFromPreset(preset)"
+                >
+                  {{ preset.host.name }}
+                </DropdownMenuItem>
+              </template>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <div
+          class="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(170px,1fr))]"
+        >
+          <HostCard
+            v-for="host in hosts"
+            :key="host.id"
+            :host="host"
+            @edit="openCustomizeHost"
           />
         </div>
       </div>

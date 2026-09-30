@@ -1,5 +1,8 @@
 <template>
-  <div class="rounded-[6px] border bg-card/40 transition-colors hover:bg-card">
+  <div
+    class="rounded-[6px] border bg-card/40 transition-colors hover:bg-card"
+    :class="{ 'border-destructive': invalid }"
+  >
     <div class="flex items-start gap-2 px-3 py-2 sm:items-center">
       <div class="flex shrink-0 flex-col">
         <Button
@@ -22,59 +25,90 @@
         </Button>
       </div>
 
-      <div
-        class="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center"
-      >
-        <Input
-          v-model="name"
-          class="h-8 min-w-0 flex-1"
-          :aria-label="$t('providers.ai_radio.customize.segment_name')"
-        />
+      <div class="flex min-w-0 flex-1 flex-col gap-1.5">
+        <div class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+          <Input
+            v-model="name"
+            class="h-8 min-w-0 flex-1"
+            :aria-label="$t('providers.ai_radio.customize.segment_name')"
+          />
+
+          <div
+            class="flex w-full items-center gap-1 sm:w-[240px] sm:shrink-0 sm:gap-2"
+          >
+            <Select v-model="playsKind">
+              <SelectTrigger class="h-8 min-w-0 flex-1 px-2 text-xs sm:px-3">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem
+                  v-for="option in playsKindOptions"
+                  :key="option.kind"
+                  :value="option.kind"
+                  class="text-xs"
+                >
+                  {{ option.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            <NumberField
+              v-if="needsN"
+              v-model="playsN"
+              class="w-12 shrink-0 sm:w-16"
+              :min="1"
+              :format-options="{ useGrouping: false, maximumFractionDigits: 0 }"
+            >
+              <NumberFieldContent>
+                <NumberFieldInput class="h-8 text-xs" />
+              </NumberFieldContent>
+            </NumberField>
+            <NumberField
+              v-if="needsPercent"
+              v-model="playsPercent"
+              class="w-12 shrink-0 sm:w-16"
+              :min="0"
+              :max="100"
+              :format-options="{ useGrouping: false, maximumFractionDigits: 0 }"
+            >
+              <NumberFieldContent>
+                <NumberFieldInput class="h-8 text-xs" />
+              </NumberFieldContent>
+            </NumberField>
+          </div>
+        </div>
 
         <div
-          class="flex w-full items-center gap-1 sm:w-[240px] sm:shrink-0 sm:gap-2"
+          v-if="!expanded && badges.length"
+          class="flex flex-wrap gap-1"
+          data-testid="segment-badges"
         >
-          <Select v-model="playsKind">
-            <SelectTrigger class="h-8 min-w-0 flex-1 px-2 text-xs sm:px-3">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem
-                v-for="option in playsKindOptions"
-                :key="option.kind"
-                :value="option.kind"
-                class="text-xs"
-              >
-                {{ option.label }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          <NumberField
-            v-if="needsN"
-            v-model="playsN"
-            class="w-12 shrink-0 sm:w-16"
-            :min="1"
-            :format-options="{ useGrouping: false, maximumFractionDigits: 0 }"
+          <Badge
+            v-for="badge in badges"
+            :key="badge"
+            variant="secondary"
+            class="text-[11px] font-normal"
           >
-            <NumberFieldContent>
-              <NumberFieldInput class="h-8 text-xs" />
-            </NumberFieldContent>
-          </NumberField>
-          <NumberField
-            v-if="needsPercent"
-            v-model="playsPercent"
-            class="w-12 shrink-0 sm:w-16"
-            :min="0"
-            :max="100"
-            :format-options="{ useGrouping: false, maximumFractionDigits: 0 }"
-          >
-            <NumberFieldContent>
-              <NumberFieldInput class="h-8 text-xs" />
-            </NumberFieldContent>
-          </NumberField>
+            {{ badge }}
+          </Badge>
         </div>
       </div>
+
+      <Button
+        variant="outline"
+        size="sm"
+        class="shrink-0"
+        :disabled="probing || !segment.prompt.trim()"
+        :title="$t('providers.ai_radio.probe.button_help')"
+        data-testid="segment-probe"
+        @click="emit('probe')"
+      >
+        <Spinner v-if="probing" class="size-4" />
+        <Headphones v-else class="h-4 w-4" />
+        <span class="hidden sm:inline">
+          {{ $t("providers.ai_radio.probe.button") }}
+        </span>
+      </Button>
 
       <Button
         variant="ghost-icon"
@@ -91,125 +125,182 @@
       </Button>
     </div>
 
-    <div v-if="expanded" class="space-y-3 border-t px-3 py-3">
-      <div class="flex flex-col gap-1.5">
-        <Label>{{ $t("providers.ai_radio.fields.prompt") }}</Label>
-        <Textarea v-model="prompt" rows="4" class="text-sm" />
-        <p class="text-xs text-muted-foreground">
-          {{ $t("providers.ai_radio.customize.prompt_placeholders_label") }}
-        </p>
-        <div class="flex flex-wrap gap-1.5 pb-2">
-          <Badge
-            v-for="token in PROMPT_PLACEHOLDERS"
-            :key="token"
-            as="button"
-            type="button"
-            variant="outline"
-            class="cursor-pointer font-mono hover:bg-accent hover:text-accent-foreground"
-            :aria-label="
-              $t('providers.ai_radio.customize.prompt_placeholder_copy_aria', [
-                token,
-              ])
-            "
-            @click="copyPlaceholder(token)"
-          >
-            {{ token }}
-            <Check v-if="copiedToken === token" />
-            <Copy v-else />
-          </Badge>
-        </div>
-      </div>
-
-      <div class="grid gap-3 sm:grid-cols-2">
-        <div class="flex flex-col gap-1.5">
-          <Label>{{ $t("providers.ai_radio.fields.web_search_mode") }}</Label>
-          <Select v-model="webSearch">
-            <SelectTrigger class="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="disabled">
-                {{ $t("providers.ai_radio.web_search.disabled") }}
-              </SelectItem>
-              <SelectItem value="allow">
-                {{ $t("providers.ai_radio.web_search.allow") }}
-              </SelectItem>
-              <SelectItem value="force">
-                {{ $t("providers.ai_radio.web_search.force") }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <p class="text-xs text-muted-foreground">
-            {{ $t("providers.ai_radio.web_search.help") }}
-          </p>
-        </div>
-
-        <div class="flex flex-col gap-1.5">
-          <Label>{{ $t("providers.ai_radio.fields.character_limit") }}</Label>
-          <NumberField v-model="maxChars" :min="0" :step="50">
-            <NumberFieldContent>
-              <NumberFieldDecrement />
-              <NumberFieldInput />
-              <NumberFieldIncrement />
-            </NumberFieldContent>
-          </NumberField>
-        </div>
-      </div>
-
-      <div v-if="api.supportsAIRadioAllowPost" class="flex items-center gap-3">
-        <FieldLabel
-          :html-for="`allow-post-${segment.id}`"
-          :label="$t('providers.ai_radio.fields.allow_post')"
-          :description="$t('providers.ai_radio.field_descriptions.allow_post')"
-        />
-        <Switch :id="`allow-post-${segment.id}`" v-model="allowPost" />
-      </div>
-
-      <div v-if="api.supportsAIRadioAllowPost" class="flex items-center gap-3">
-        <FieldLabel
-          :html-for="`allow-talk-over-${segment.id}`"
-          :label="$t('providers.ai_radio.fields.allow_talk_over')"
-          :description="
-            $t('providers.ai_radio.field_descriptions.allow_talk_over')
-          "
-        />
-        <Switch :id="`allow-talk-over-${segment.id}`" v-model="allowTalkOver" />
-      </div>
-
-      <div class="grid gap-3 sm:grid-cols-2">
-        <div
-          v-for="slot in JINGLE_SLOTS"
-          :key="slot.key"
-          class="flex flex-col gap-1.5"
+    <div v-if="expanded" class="space-y-5 border-t px-3 py-3">
+      <section class="space-y-3">
+        <h4
+          class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
         >
-          <Label :for="`segment-${slot.key}-${segment.id}`">
-            {{ $t(`providers.ai_radio.effects.${slot.label}`) }}
+          {{ $t("providers.ai_radio.customize.group_content") }}
+        </h4>
+        <div class="flex flex-col gap-1.5">
+          <Label :for="`segment-prompt-${segment.id}`">
+            {{ $t("providers.ai_radio.fields.prompt") }}
           </Label>
-          <Select
-            :model-value="segment[slot.key] ?? 'auto'"
-            @update:model-value="setJingleMode(slot.key, $event)"
-          >
-            <SelectTrigger
-              :id="`segment-${slot.key}-${segment.id}`"
-              class="w-full"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem
-                v-for="mode in JINGLE_MODES"
-                :key="mode"
-                :value="mode"
-              >
-                {{ $t(`providers.ai_radio.effects.jingle_mode_${mode}`) }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <p class="text-xs text-muted-foreground">
-            {{ $t(`providers.ai_radio.effects.${slot.label}_help`) }}
+          <div ref="promptBox">
+            <Textarea
+              :id="`segment-prompt-${segment.id}`"
+              v-model="prompt"
+              rows="4"
+              class="text-sm"
+              :aria-invalid="invalid"
+            />
+          </div>
+          <p v-if="invalid" class="text-xs text-destructive">
+            {{
+              $t(
+                "providers.ai_radio.hosts.editor.validation.segment_prompt_required",
+              )
+            }}
           </p>
+          <p class="text-xs text-muted-foreground">
+            {{ $t("providers.ai_radio.customize.prompt_placeholders_label") }}
+          </p>
+          <div class="flex flex-wrap gap-1.5">
+            <Badge
+              v-for="token in PROMPT_PLACEHOLDERS"
+              :key="token"
+              as="button"
+              type="button"
+              variant="outline"
+              class="cursor-pointer gap-1.5 hover:bg-accent hover:text-accent-foreground"
+              :aria-label="
+                $t('providers.ai_radio.customize.prompt_placeholder_insert', [
+                  token,
+                ])
+              "
+              :title="token"
+              @click="insertPlaceholder(token)"
+            >
+              <Plus class="h-3 w-3" />
+              {{
+                $t(`providers.ai_radio.placeholders.${placeholderKey(token)}`)
+              }}
+            </Badge>
+          </div>
         </div>
-      </div>
+
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div class="flex flex-col gap-1.5">
+            <Label :for="`segment-web-${segment.id}`">
+              {{ $t("providers.ai_radio.fields.web_search_mode") }}
+            </Label>
+            <Select v-model="webSearch">
+              <SelectTrigger :id="`segment-web-${segment.id}`" class="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="disabled">
+                  {{ $t("providers.ai_radio.web_search.disabled") }}
+                </SelectItem>
+                <SelectItem value="allow">
+                  {{ $t("providers.ai_radio.web_search.allow") }}
+                </SelectItem>
+                <SelectItem value="force">
+                  {{ $t("providers.ai_radio.web_search.force") }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p class="text-xs text-muted-foreground">
+              {{ $t("providers.ai_radio.web_search.help") }}
+            </p>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <Label :for="`segment-length-${segment.id}`">
+              {{ $t("providers.ai_radio.fields.character_limit") }}
+            </Label>
+            <NumberField
+              :id="`segment-length-${segment.id}`"
+              v-model="maxChars"
+              :min="0"
+              :step="50"
+            >
+              <NumberFieldContent>
+                <NumberFieldDecrement />
+                <NumberFieldInput />
+                <NumberFieldIncrement />
+              </NumberFieldContent>
+            </NumberField>
+            <p class="text-xs text-muted-foreground">
+              {{
+                segment.maxChars > 0
+                  ? $t("providers.ai_radio.customize.spoken_seconds", [
+                      spokenSeconds(segment.maxChars),
+                    ])
+                  : $t("providers.ai_radio.customize.no_length_limit")
+              }}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="space-y-3">
+        <h4
+          class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+        >
+          {{ $t("providers.ai_radio.customize.group_transitions") }}
+        </h4>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div
+            v-for="side in SIDES"
+            :key="side.slot"
+            class="flex flex-col gap-3 rounded-md border p-3"
+          >
+            <p class="text-sm font-medium">
+              {{ $t(`providers.ai_radio.customize.${side.title}`) }}
+            </p>
+            <div
+              v-if="api.supportsAIRadioAllowPost"
+              class="flex items-center gap-3"
+            >
+              <FieldLabel
+                :html-for="`${side.switchId}-${segment.id}`"
+                :label="$t(`providers.ai_radio.fields.${side.field}`)"
+                :description="
+                  $t(`providers.ai_radio.field_descriptions.${side.field}`)
+                "
+              />
+              <Switch
+                :id="`${side.switchId}-${segment.id}`"
+                :model-value="switchValue(side.flag)"
+                @update:model-value="setSwitch(side.flag, $event)"
+              />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <Label :for="`segment-${side.slot}-${segment.id}`">
+                {{ $t(`providers.ai_radio.effects.${side.label}`) }}
+              </Label>
+              <Select
+                :model-value="segment[side.slot] ?? 'auto'"
+                @update:model-value="setJingleMode(side.slot, $event)"
+              >
+                <SelectTrigger
+                  :id="`segment-${side.slot}-${segment.id}`"
+                  class="w-full"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="mode in JINGLE_MODES"
+                    :key="mode"
+                    :value="mode"
+                  >
+                    {{ jingleModeLabel(side.label, mode) }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p class="text-xs text-muted-foreground">
+                {{
+                  $t(
+                    `providers.ai_radio.effects.${side.label}_modes_help.${segment[side.slot] ?? "auto"}`,
+                  )
+                }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div class="flex justify-end">
         <Button
@@ -246,23 +337,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   playsRuleLabel,
+  spokenSeconds,
   type PlaysRule,
   type ShowSegment,
 } from "@/helpers/ai_radio";
-import { copyToClipboard } from "@/helpers/utils";
 import { api } from "@/plugins/api";
 import type {
   AIRadioJingleMode,
   AIRadioWebSearchMode,
 } from "@/plugins/api/interfaces";
 import { $t } from "@/plugins/i18n";
-import { Check, ChevronDown, ChevronUp, Copy, Trash2 } from "@lucide/vue";
-import { computed, onUnmounted, ref } from "vue";
-import { toast } from "vue-sonner";
+import { ChevronDown, ChevronUp, Headphones, Plus, Trash2 } from "@lucide/vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 // listed literally so translators never handle raw <placeholder> markup
 const PROMPT_PLACEHOLDERS = [
@@ -280,6 +371,10 @@ const props = defineProps<{
   segment: ShowSegment;
   canMoveUp: boolean;
   canMoveDown: boolean;
+  // the segment stopped a save, e.g. for want of a prompt
+  invalid?: boolean;
+  // a rehearsal of the segment is being made
+  probing?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -287,9 +382,19 @@ const emit = defineEmits<{
   "move-up": [];
   "move-down": [];
   remove: [];
+  probe: [];
 }>();
 
 const expanded = ref(false);
+
+// a segment that stopped a save opens up, so what is missing is in view
+watch(
+  () => props.invalid,
+  (invalid) => {
+    if (invalid) expanded.value = true;
+  },
+  { immediate: true },
+);
 
 const JINGLE_MODES: AIRadioJingleMode[] = [
   "auto",
@@ -297,44 +402,99 @@ const JINGLE_MODES: AIRadioJingleMode[] = [
   "no_post",
   "never",
 ];
-const JINGLE_SLOTS = [
-  { key: "jingleBefore", label: "jingle_before" },
-  { key: "jingleAfter", label: "jingle_after" },
+
+// the start of a break meets the song before it, its end the song after it
+const SIDES = [
+  {
+    title: "side_start",
+    field: "allow_talk_over",
+    flag: "allowTalkOver",
+    switchId: "allow-talk-over",
+    slot: "jingleBefore",
+    label: "jingle_before",
+  },
+  {
+    title: "side_end",
+    field: "allow_post",
+    flag: "allowPost",
+    switchId: "allow-post",
+    slot: "jingleAfter",
+    label: "jingle_after",
+  },
 ] as const;
 
-function setJingleMode(
-  key: (typeof JINGLE_SLOTS)[number]["key"],
-  value: unknown,
-) {
+type JingleSlot = (typeof SIDES)[number]["slot"];
+type TalkFlag = (typeof SIDES)[number]["flag"];
+
+function jingleModeLabel(label: string, mode: AIRadioJingleMode): string {
+  // "no post" means something else at each end, so it is named for its side
+  return mode === "no_post"
+    ? $t(`providers.ai_radio.effects.${label}_mode_no_post`)
+    : $t(`providers.ai_radio.effects.jingle_mode_${mode}`);
+}
+
+function setJingleMode(key: JingleSlot, value: unknown) {
   if (!JINGLE_MODES.includes(value as AIRadioJingleMode)) return;
   emit("update", { ...props.segment, [key]: value as AIRadioJingleMode });
 }
 
-const COPIED_FEEDBACK_MS = 1500;
-const copiedToken = ref<string | null>(null);
-let copiedTimer: ReturnType<typeof setTimeout> | undefined;
-
-async function copyPlaceholder(token: string) {
-  const success = await copyToClipboard(token);
-  if (!success) {
-    toast.error(
-      $t("providers.ai_radio.customize.prompt_placeholder_copy_failed", [
-        token,
-      ]),
-    );
-    return;
-  }
-  toast.success(
-    $t("providers.ai_radio.customize.prompt_placeholder_copied", [token]),
-  );
-  clearTimeout(copiedTimer);
-  copiedToken.value = token;
-  copiedTimer = setTimeout(() => {
-    copiedToken.value = null;
-  }, COPIED_FEEDBACK_MS);
+function switchValue(flag: TalkFlag): boolean {
+  return props.segment[flag] ?? false;
 }
 
-onUnmounted(() => clearTimeout(copiedTimer));
+function setSwitch(flag: TalkFlag, value: boolean) {
+  emit("update", { ...props.segment, [flag]: value });
+}
+
+/** The short names the segment's settings show under it while it is folded. */
+const badges = computed(() => {
+  const { segment } = props;
+  const list: string[] = [];
+  if (segment.allowTalkOver)
+    list.push($t("providers.ai_radio.badges.talk_over"));
+  if (segment.allowPost) list.push($t("providers.ai_radio.badges.post"));
+  for (const side of SIDES) {
+    const mode = segment[side.slot];
+    if (mode && mode !== "auto") {
+      list.push(
+        $t(`providers.ai_radio.badges.${side.label}`, [
+          jingleModeLabel(side.label, mode),
+        ]),
+      );
+    }
+  }
+  if (segment.webSearch !== "disabled") {
+    list.push($t(`providers.ai_radio.badges.web_${segment.webSearch}`));
+  }
+  return list;
+});
+
+function placeholderKey(token: string): string {
+  return token.replace(/[<>]/g, "");
+}
+
+const promptBox = ref<HTMLElement | null>(null);
+
+/** Puts a placeholder where the cursor stands in the prompt, or at its end. */
+async function insertPlaceholder(token: string) {
+  const textarea = promptBox.value?.querySelector("textarea");
+  const text = props.segment.prompt;
+  const start = textarea?.selectionStart ?? text.length;
+  const end = textarea?.selectionEnd ?? text.length;
+  const before = text.slice(0, start);
+  // a placeholder glued to a word would read as part of it
+  const spaced = before && !/\s$/.test(before) ? ` ${token}` : token;
+  emit("update", {
+    ...props.segment,
+    prompt: `${before}${spaced}${text.slice(end)}`,
+  });
+  await nextTick();
+  if (textarea) {
+    const cursor = before.length + spaced.length;
+    textarea.focus();
+    textarea.setSelectionRange(cursor, cursor);
+  }
+}
 
 const DEFAULT_EVERY_N_SONGS = 3;
 const DEFAULT_EVERY_N_MIN = 60;
@@ -400,18 +560,6 @@ const maxChars = computed({
   get: () => props.segment.maxChars,
   set: (value: number) =>
     emit("update", { ...props.segment, maxChars: Math.max(0, value) }),
-});
-
-const allowPost = computed({
-  get: () => props.segment.allowPost,
-  set: (value: boolean) =>
-    emit("update", { ...props.segment, allowPost: value }),
-});
-
-const allowTalkOver = computed({
-  get: () => props.segment.allowTalkOver ?? false,
-  set: (value: boolean) =>
-    emit("update", { ...props.segment, allowTalkOver: value }),
 });
 
 const playsKind = computed({

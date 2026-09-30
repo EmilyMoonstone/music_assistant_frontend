@@ -1,8 +1,10 @@
 import CustomizeHost from "@/components/ai-radio/CustomizeHost.vue";
+import LabeledSlider from "@/components/ai-radio/LabeledSlider.vue";
 import { useHosts } from "@/composables/ai-radio/useHosts";
 import { compileHost, GENERIC_SEGMENT_TEMPLATES } from "@/helpers/ai_radio";
 import type { HostDraft } from "@/helpers/ai_radio";
 import type { AIRadioHost } from "@/plugins/api/interfaces";
+import { store } from "@/plugins/store";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -15,13 +17,15 @@ const { sendCommand } = vi.hoisted(() => ({
   sendCommand: vi.fn<SendCommand>(async () => []),
 }));
 
-vi.mock("@/plugins/api", () => ({
-  default: {
+vi.mock("@/plugins/api", () => {
+  const stub = {
     // useHosts derives ai_radio availability from the provider list.
     providers: {},
+    supportsAIRadioAllowPost: true,
     sendCommand,
-  },
-}));
+  };
+  return { default: stub, api: stub };
+});
 
 vi.mock("vue-router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("vue-router")>()),
@@ -40,12 +44,30 @@ vi.mock("vue-sonner", () => ({
   },
 }));
 
+// the add menus render their entries in place, so they can be clicked like buttons
+const MENU_STUBS = {
+  DropdownMenu: { template: "<div><slot /></div>" },
+  DropdownMenuTrigger: { template: "<div><slot /></div>" },
+  DropdownMenuContent: { template: "<div><slot /></div>" },
+  DropdownMenuItem: {
+    emits: ["click"],
+    template: `<button type="button" @click="$emit('click')"><slot /></button>`,
+  },
+};
+
+function mountHost(props: Record<string, unknown> = {}) {
+  return mount(CustomizeHost, { props, global: { stubs: MENU_STUBS } });
+}
+
 /** Mounts the editor in create mode (a new host seeded with one generic example segment per placement). */
 async function mountEditor() {
-  const wrapper = mount(CustomizeHost);
+  const wrapper = mountHost();
   await flushPromises();
   return wrapper;
 }
+
+const buttonWithText = (wrapper: VueWrapper, text: string) =>
+  wrapper.findAll("button").find((button) => button.text() === text);
 
 function saveButton(wrapper: VueWrapper) {
   return wrapper
@@ -192,8 +214,11 @@ describe("CustomizeHost save", () => {
       if (command === "ai_radio/sections/list") return sections;
       return [];
     });
-    const wrapper = mount(CustomizeHost, { props: { hostId: host.id } });
+    const wrapper = mountHost({ hostId: host.id });
     await flushPromises();
+    // an unchanged host has nothing to save
+    expect(saveButton(wrapper)?.attributes("disabled")).toBeDefined();
+    await wrapper.find("#customize-host-name").setValue("Rick Astley");
 
     await save(wrapper);
 
@@ -221,10 +246,7 @@ describe("CustomizeHost effects", () => {
     const toggle = wrapper.get("#customize-host-jingles-toggle");
     expect(toggle.attributes("aria-expanded")).toBe("true");
 
-    await wrapper
-      .findAll("button")
-      .find((button) => button.text() === "Add jingle")
-      ?.trigger("click");
+    await buttonWithText(wrapper, "Enter a file or URL")?.trigger("click");
     expect(toggle.attributes("aria-expanded")).toBe("true");
 
     await toggle.trigger("click");
@@ -236,10 +258,7 @@ describe("CustomizeHost effects", () => {
   it("saves a jingle with its tags and words, the chance and the bed", async () => {
     const wrapper = await mountEditor();
     await wrapper.find("#customize-host-name").setValue("Mika");
-    const addJingle = wrapper
-      .findAll("button")
-      .find((button) => button.text() === "Add jingle");
-    await addJingle?.trigger("click");
+    await buttonWithText(wrapper, "Enter a file or URL")?.trigger("click");
     await wrapper
       .find('input[aria-label="Jingle file or URL"]')
       .setValue("/media/ai_radio/untergrund.mp3");
@@ -250,7 +269,12 @@ describe("CustomizeHost effects", () => {
     await wrapper
       .find('textarea[aria-label="What the jingle says"]')
       .setValue("Neues aus dem Untergrund.");
-    await wrapper.find("#customize-host-jingle-chance").setValue("35");
+    wrapper
+      .findAllComponents(LabeledSlider)
+      .find((slider) => slider.props("id") === "customize-host-jingle-chance")
+      ?.vm.$emit("update:modelValue", 35);
+    await buttonWithText(wrapper, "Music bed")?.trigger("click");
+    await flushPromises();
     await wrapper.find("#customize-host-music-bed").setValue("/media/bed.mp3");
 
     await save(wrapper);
@@ -279,6 +303,8 @@ describe("CustomizeHost effects", () => {
   it("only offers the bed level once a bed is set", async () => {
     const wrapper = await mountEditor();
 
+    await buttonWithText(wrapper, "Music bed")?.trigger("click");
+    await flushPromises();
     expect(wrapper.find("#customize-host-music-bed-level").exists()).toBe(
       false,
     );
@@ -323,7 +349,7 @@ describe("CustomizeHost effects", () => {
       return [];
     });
 
-    const wrapper = mount(CustomizeHost, { props: { hostId: host.id } });
+    const wrapper = mountHost({ hostId: host.id });
     await flushPromises();
 
     // a filled library opens folded away, with its size in the title
@@ -334,6 +360,15 @@ describe("CustomizeHost effects", () => {
       wrapper.find('input[aria-label="Jingle file or URL"]').exists(),
     ).toBe(false);
     await toggle.trigger("click");
+    // the jingle shows by its name until its row is unfolded
+    expect(wrapper.get('[data-testid="jingle-name"]').text()).toBe(
+      "floskeln.mp3",
+    );
+    await wrapper
+      .get('[data-testid="jingle-name"]')
+      .element.closest("button")!
+      .click();
+    await flushPromises();
 
     expect(
       (
@@ -356,5 +391,48 @@ describe("CustomizeHost effects", () => {
     expect(wrapper.find("#customize-host-lead-in-seconds").exists()).toBe(
       false,
     );
+  });
+});
+
+describe("CustomizeHost rehearsal", () => {
+  it("rehearses a segment as the draft has it, saved or not", async () => {
+    store.activePlayerId = "kitchen";
+    sendCommand.mockImplementation(async (command) =>
+      command === "ai_radio/hosts/probe"
+        ? { text: "Hallo!", jingle: "", seconds: 3 }
+        : [],
+    );
+    const wrapper = await mountEditor();
+    await wrapper.find("#customize-host-name").setValue("Mika");
+
+    await wrapper.findAll('[data-testid="segment-probe"]')[0].trigger("click");
+    await flushPromises();
+
+    const call = sendCommand.mock.calls.find(
+      ([command]) => command === "ai_radio/hosts/probe",
+    );
+    const args = call?.[1] as {
+      host: AIRadioHost;
+      section: { prompt: string };
+      player_id: string;
+    };
+    expect(args.player_id).toBe("kitchen");
+    expect(args.host.name).toBe("Mika");
+    expect(args.section.prompt).not.toBe("");
+    expect(aiRadioCommands()).not.toContain("ai_radio/hosts/save");
+  });
+
+  it("marks a segment without a prompt when a save fails for it", async () => {
+    const wrapper = await mountEditor();
+    await wrapper.find("#customize-host-name").setValue("Mika");
+    await wrapper.get('button[aria-label="Show more"]').trigger("click");
+    await wrapper.get("textarea[id^='segment-prompt-']").setValue("");
+
+    await save(wrapper);
+
+    expect(aiRadioCommands()).not.toContain("ai_radio/hosts/save");
+    expect(
+      wrapper.get("textarea[id^='segment-prompt-']").attributes("aria-invalid"),
+    ).toBe("true");
   });
 });

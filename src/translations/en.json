@@ -1793,14 +1793,15 @@
                 "saving": "Saving...",
                 "up": "Up",
                 "down": "Down",
-                "remove": "Remove"
+                "remove": "Remove",
+                "unsaved": "Unsaved changes"
             },
             "fields": {
                 "source_playtime_cap": "Source Playtime Cap (minutes)",
                 "default_playback_device": "Default Playback Device (optional)",
                 "web_search_mode": "Web Search Mode",
-                "character_limit": "Character Limit",
-                "allow_post": "Allow Post",
+                "character_limit": "Maximum length (characters)",
+                "allow_post": "Talk over the intro",
                 "allow_talk_over": "Talk over the outro",
                 "prompt": "Prompt",
                 "instructions": "Host and Program Instructions",
@@ -1813,14 +1814,14 @@
                 "source_playtime_cap": "Maximum total playing time of the source music, in minutes. Tracks are taken in the order the show plays them until the cap is reached. Leave at 0 for no limit.",
                 "instructions": "Describes the host's personality and how segments should be written. This is sent to the AI with every segment.",
                 "shuffle_playlist_tracks": "Play the source playlist in random order. Turn this off to follow the playlist's own order.",
-                "allow_post": "Let this segment carry on over the start of the next song, finishing as the vocal comes in. Only happens when the song has an intro long enough and its lyrics are known.",
-                "allow_talk_over": "Let this segment start over the end of the song before it, once its singing is over, with the song playing on quietly underneath. Only happens with crossfade on, and when the song's lyrics are known and leave a long enough outro. Uses the host's post gap, length and duck."
+                "allow_post": "The break finishes over the start of the next song, before its singing begins (a post). Needs the song's synced lyrics and a long enough intro.",
+                "allow_talk_over": "The break starts over the end of the song before it, once its singing is over, with the song playing on quietly underneath. Needs the song's synced lyrics and a long enough outro."
             },
             "web_search": {
-                "disabled": "disabled (no web tool)",
-                "allow": "allow (model may use web)",
-                "force": "force (web search required)",
-                "help": "Whether the host may look things up on the web for this segment."
+                "disabled": "Off",
+                "allow": "When useful",
+                "force": "Always (e.g. news)",
+                "help": "Whether the host looks things up on the web for this segment. News needs it always."
             },
             "plays": {
                 "start": "Once at start",
@@ -1900,7 +1901,9 @@
                 "start_failed": "Failed to start: {0}",
                 "switch_show_title": "Switch show?",
                 "switch_show_confirm": "«{0}» is on air. Stop it and play «{1}»?",
-                "switch_show_confirm_label": "Switch"
+                "switch_show_confirm_label": "Switch",
+                "play_show": "Play {0}",
+                "log": "Break log"
             },
             "create": {
                 "title": "Create a show",
@@ -1926,8 +1929,8 @@
                 "action": "Go to Settings → Plugins"
             },
             "effects": {
-                "title": "Sound effects",
-                "help": "Dress this host's breaks with jingles and a music bed. Use a file in Home Assistant's media folder or a URL.",
+                "title": "Jingles",
+                "help": "The jingles the host opens and closes breaks with. Use files in Home Assistant's media folder or URLs.",
                 "builtin": "Built-in gong",
                 "jingles": "Jingles",
                 "jingles_count": "Jingles ({0})",
@@ -1937,8 +1940,8 @@
                 "jingle_source": "Jingle file or URL",
                 "jingle_text": "What the jingle says",
                 "jingle_text_placeholder": "The words in the jingle, so the AI can pick a fitting one and pick up on it",
-                "read_from_file": "Read from file",
-                "analyze_style": "Analyze style",
+                "read_from_file": "Capture lyrics",
+                "analyze_style": "Capture style",
                 "analyze_style_help": "Let the AI listen to the jingle and suggest tags, its words and a note on its style. Works for files in the media folder.",
                 "analyze_style_done": "Tags added: {0}. {1}",
                 "analyze_style_nothing_new": "No new tags. {0}",
@@ -1975,32 +1978,47 @@
                 "jingleSelection_help": "Let the AI that writes the break pick the jingles that fit best, in the same request, or pick at random among the fitting ones.",
                 "selection_ai": "AI picks",
                 "selection_random": "Random",
-                "leadIn": "Transition from the song",
-                "leadIn_help": "How the song before blends into a break. Needs crossfade turned on for the player; without it the break always cuts in.",
+                "leadIn": "Otherwise",
+                "leadIn_help": "Cut: the break starts when the song has ended. Crossfade: it fades in over the song's last seconds, but never over singing where the lyrics tell.",
                 "leadIn_cut": "Cut",
                 "leadIn_crossfade": "Crossfade",
-                "leadIn_talk_up": "Talk-up over the outro",
-                "leadInSeconds": "Transition length (seconds)",
-                "post": "Transition into the song (Allow Post)",
-                "post_help": "For segments with Allow Post: the break's end runs over the next song's intro, which is ducked under the voice.",
-                "postGapSeconds": "Gap before the vocal (s)",
-                "postMaxSeconds": "Longest overlap (s, 0 = no cap)",
-                "postDuckPercent": "Music drop under the voice (%)",
-                "jingle_before": "Jingle before",
-                "jingle_before_help": "Automatic follows the host: news, weather and the show's start and end open with theirs, other breaks by the jingle chance. Only without post opens every break with one, unless it starts over the outro of the song before it.",
-                "jingle_after": "Jingle after",
-                "jingle_after_help": "Automatic lets the AI close the break with a jingle into the next song where it fits, like after the news or into a song that sings right away, at most once per the host's gap. Only without post closes every break with one, unless it can post over the next song's intro.",
+                "leadInSeconds": "Crossfade length (s)",
+                "postGapSeconds": "Gap to the singing (s)",
+                "postMaxSeconds": "Longest stretch (s)",
+                "postDuckPercent": "Music under the voice",
+                "jingle_before": "Jingle at the start",
+                "jingle_after": "Jingle at the end",
                 "jingle_mode_auto": "Automatic",
                 "jingle_mode_always": "Always",
                 "jingle_mode_never": "Never",
-                "jingle_mode_no_post": "Only without post",
                 "jingleAfterGapMinutes": "Minutes between closing jingles",
                 "jingleAfterGapMinutes_help": "A break closes with a jingle of its own accord at most this often. Segments set to always are not held back.",
                 "musicBed": "Music bed",
                 "musicBed_help": "Loops quietly under every break and fades out after the last word. Leave empty for none.",
                 "musicBedLevel": "Music bed level (dB)",
                 "musicBedLevel_help": "How far below the voice the bed sits, from -40 (barely audible) to -6 (prominent).",
-                "source_placeholder": "\/media\/ai_radio\/jingle.mp3"
+                "source_placeholder": "\/media\/ai_radio\/jingle.mp3",
+                "postGapSeconds_help": "Music left between the voice and the singing.",
+                "postMaxSeconds_help": "The most the voice runs over a song, 0 for no limit.",
+                "musicBed_file": "Bed file",
+                "read_from_file_help": "Read what the jingle says from its lyrics tag, or by listening to it.",
+                "no_text_warning": "No words stored: the host may repeat what the jingle says. Capture its lyrics.",
+                "new_jingle": "New jingle",
+                "add_by_path": "Enter a file or URL",
+                "jingle_before_mode_no_post": "Only when not talking over the outro",
+                "jingle_after_mode_no_post": "Only when no post fits",
+                "jingle_before_modes_help": {
+                    "auto": "Follows the host: news, weather and the show's start and end open with theirs, other breaks by the jingle chance.",
+                    "always": "Every break of this segment opens with a jingle.",
+                    "no_post": "Opens with a jingle every time, unless the break starts over the outro of the song before it.",
+                    "never": "This segment never opens with a jingle."
+                },
+                "jingle_after_modes_help": {
+                    "auto": "The AI closes the break with a jingle where it fits, like after the news or into a song that sings right away, at most once per the host's gap.",
+                    "always": "Every break of this segment closes with a jingle.",
+                    "no_post": "Closes with a jingle every time, unless the break can talk over the next song's intro.",
+                    "never": "This segment never closes with a jingle."
+                }
             },
             "running_order": {
                 "label": "Song order",
@@ -2045,10 +2063,7 @@
                 "host_required": "Choose a host before saving",
                 "no_hosts_hint": "You need a host before you can save this show.",
                 "create_host_cta": "Create a host",
-                "prompt_placeholders_label": "Placeholders — tap to copy:",
-                "prompt_placeholder_copied": "Copied {0} to clipboard",
-                "prompt_placeholder_copy_failed": "Failed to copy {0} to clipboard",
-                "prompt_placeholder_copy_aria": "Copy {0}",
+                "prompt_placeholders_label": "Placeholders, click to insert at the cursor:",
                 "personality_title": "Personality",
                 "tts_options_title": "Advanced TTS options",
                 "tts_options_help": "Only add keys your selected engine supports, since an unsupported key can make it reject the whole clip.",
@@ -2057,7 +2072,14 @@
                 "option_value": "Option value",
                 "option_value_placeholder": "e.g. en_US-lessac-medium",
                 "add_option": "Add option",
-                "remove_option": "Remove option"
+                "remove_option": "Remove option",
+                "group_content": "Content",
+                "group_transitions": "Transitions & jingles",
+                "side_start": "Start: coming from the song",
+                "side_end": "End: going into the song",
+                "spoken_seconds": "About {0} s spoken",
+                "no_length_limit": "No length limit",
+                "prompt_placeholder_insert": "Insert {0}"
             },
             "hosts": {
                 "title": "Hosts",
@@ -2080,6 +2102,113 @@
                     "default_language": "Follow server language"
                 },
                 "blank_host": "Blank host"
+            },
+            "log": {
+                "title": "Break log: {0}",
+                "description": "What happened around the latest breaks of this show: what the host said, which jingles played and how each break met the songs around it.",
+                "empty": "No breaks yet. Play the show and they show up here.",
+                "skipped": "Skipped",
+                "from_song": "From the song:",
+                "into_song": "Into the song:",
+                "opener": "Opening jingle:",
+                "script": "What the host said",
+                "refresh": "Refresh",
+                "from_kinds": {
+                    "talk_over": "talked over the outro ({0} s)",
+                    "crossfade": "crossfade ({0} s)",
+                    "cut": "cut"
+                },
+                "into_kinds": {
+                    "post": "talked over the intro ({0} s)",
+                    "jingle": "closing jingle {1}",
+                    "direct": "straight into the song"
+                },
+                "reasons": {
+                    "no_song_before": "no song before the break",
+                    "unknown_length": "the song's length is unknown",
+                    "crossfade_off": "crossfade is off for this player",
+                    "no_track_details": "no song details",
+                    "lyrics_timeout": "the lyrics lookup took too long",
+                    "lyrics_failed": "the lyrics lookup failed",
+                    "no_sung_line": "the lyrics have no sung line",
+                    "unsynced_lyrics": "only lyrics without timing",
+                    "no_lyrics": "no lyrics found",
+                    "little_outro": "the singing goes on until {0} s, too little outro",
+                    "singing_to_end": "the singing runs to the end",
+                    "closing_jingle": "a closing jingle leads into the song",
+                    "no_next_track": "no next song",
+                    "early_vocal": "the singing starts at {0} s",
+                    "staging_failed": "the audio could not be prepared",
+                    "break_too_short": "the break is only {0} s long",
+                    "queue_changed": "another song came next",
+                    "staged_gone": "the prepared audio was gone"
+                },
+                "skip_reasons": {
+                    "no_prompt": "The segment has no prompt.",
+                    "no_weather": "No weather data, and the segment needs it.",
+                    "generation_failed": "The AI could not write the break.",
+                    "tts_failed": "The voice could not be rendered.",
+                    "failed": "The break could not be made."
+                }
+            },
+            "crossfade_hint": {
+                "title": "Crossfade is off",
+                "description": "Crossfade is off for {0}, so breaks always cut in and nobody talks over a song. Transitions and posts need it on.",
+                "enable": "Turn crossfade on"
+            },
+            "transitions": {
+                "title": "Transitions",
+                "help": "How breaks meet the songs around them. The host never talks over singing: where it starts and ends is read from the song's synced lyrics.",
+                "from_song_title": "From the song into the break",
+                "from_song_help": "Segments with \"Talk over the outro\" start once the singing is over, with the song playing on quietly underneath. Otherwise, or when a song's lyrics are unknown, this applies:",
+                "into_song_title": "From the break into the song",
+                "into_song_help": "Segments with \"Talk over the intro\" finish over the next song's intro, before the singing starts. Otherwise the break goes straight into the song, or into its closing jingle, as each segment sets it.",
+                "talk_title": "Talking over a song",
+                "talk_help": "Applies to both: to the intro and to the outro."
+            },
+            "levels": {
+                "chance_never": "never",
+                "chance_rarely": "rarely",
+                "chance_sometimes": "sometimes",
+                "chance_often": "often",
+                "chance_always": "always",
+                "duck_slightly": "slightly quieter",
+                "duck_quieter": "quieter",
+                "duck_much": "much quieter",
+                "duck_almost_off": "almost silent",
+                "bed_barely": "barely audible",
+                "bed_quiet": "quiet",
+                "bed_clear": "clearly audible",
+                "bed_prominent": "prominent"
+            },
+            "probe": {
+                "button": "Rehearse",
+                "button_help": "Write and play one break of this segment on the active player, with the settings as they are now, saved or not.",
+                "title": "Rehearsal: {0}",
+                "description": "Played on the active player, with the songs it is playing or examples. Nothing of it is remembered for the show.",
+                "working": "Writing and recording the break…",
+                "meta": "{0} s",
+                "meta_jingle": "{0} s, opening with {1}",
+                "again": "Again",
+                "no_player": "Select a player first, the rehearsal plays on the active one."
+            },
+            "placeholders": {
+                "prev_songinfo": "Previous song",
+                "next_songinfo": "Next song",
+                "very_next_songinfo": "Song after next",
+                "timestamp": "Date and time",
+                "weather_hourly": "Weather, next hours",
+                "weather_daily": "Weather, next days",
+                "recent_breaks": "Recent breaks",
+                "recent_news": "Recent news"
+            },
+            "badges": {
+                "talk_over": "Talks over outro",
+                "post": "Talks over intro",
+                "jingle_before": "Start: {0}",
+                "jingle_after": "End: {0}",
+                "web_allow": "Web when useful",
+                "web_force": "Web always"
             }
         }
     },

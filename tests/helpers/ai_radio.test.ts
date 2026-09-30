@@ -6,11 +6,14 @@ import {
   DEFAULT_MUSIC_BED_LEVEL,
   defaultHostEffects,
   DEFAULT_AI_ORDER_MAX_TRACKS,
+  duckDecibels,
   errorMessage,
   GENERIC_SEGMENT_TEMPLATES,
+  jingleFileName,
   MERGE_SECTION_PROMPT,
   relativeTimeFromIso,
   slugify,
+  spokenSeconds,
 } from "@/helpers/ai_radio";
 import type { HostDraft, ShowDraft } from "@/helpers/ai_radio";
 import type {
@@ -414,7 +417,7 @@ describe("host effects", () => {
         jingleAfterGapMinutes: 45,
         musicBed: "https://example.test/bed.mp3",
         musicBedLevel: -24,
-        leadIn: "talk_up",
+        leadIn: "crossfade",
         leadInSeconds: 4,
         postGapSeconds: 1.5,
         postMaxSeconds: 6,
@@ -437,14 +440,24 @@ describe("host effects", () => {
       jingleAfterGapMinutes: 45,
       musicBed: "https://example.test/bed.mp3",
       musicBedLevel: -24,
-      leadIn: "talk_up",
+      leadIn: "crossfade",
       leadInSeconds: 4,
       postGapSeconds: 1.5,
       postMaxSeconds: 6,
       postDuckPercent: 40,
     });
-    expect(host.effects?.lead_in).toBe("talk_up");
+    expect(host.effects?.lead_in).toBe("crossfade");
     expect(host.effects?.lead_in_seconds).toBe(4);
+  });
+
+  it("reads the old fixed talk-up as a crossfade", () => {
+    const { host, sections } = compileHost(draft);
+    const stored = {
+      ...host,
+      effects: { ...host.effects!, lead_in: "talk_up" as const },
+    };
+
+    expect(decompileHost(stored, sections).effects?.leadIn).toBe("crossfade");
   });
 
   it("keeps a segment's jingle modes, storing only the ones it sets", () => {
@@ -610,5 +623,26 @@ describe("show running order", () => {
       aiOrderMaxTracks: 80,
       aiOrderPrompt: "Late night only.",
     });
+  });
+});
+
+describe("editor read-outs", () => {
+  it("tells how far a duck lowers the music in dB", () => {
+    expect(duckDecibels(0)).toBe(0);
+    expect(duckDecibels(60)).toBe(-8);
+    expect(duckDecibels(90)).toBe(-20);
+  });
+
+  it("estimates how long a script is spoken", () => {
+    expect(spokenSeconds(500)).toBe(36);
+    expect(spokenSeconds(0)).toBe(0);
+  });
+
+  it("names a jingle by its file", () => {
+    expect(jingleFileName("/media/ai_radio/M%C3%BCnchen%20leuchtet.mp3")).toBe(
+      "München leuchtet.mp3",
+    );
+    expect(jingleFileName("https://example.test/a/b.mp3?x=1")).toBe("b.mp3");
+    expect(jingleFileName("builtin")).toBe("");
   });
 });
